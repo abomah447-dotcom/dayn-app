@@ -3,84 +3,2566 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0f2942">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="أرشيف الذمم">
   <title>أرشيف الذمم</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icon.png">
-  <link rel="apple-touch-icon" href="icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      width: 100%; height: 100%; overflow: hidden;
-      background: #0f2942; font-family: Tahoma, Arial, sans-serif;
+    :root {
+      --navy: #0f2942;
+      --navy-light: #1a3b5c;
+      --teal: #0d9488;
+      --teal-hover: #0f766e;
+      --gold: #c5a028;
+      --gold-soft: #fef9e7;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --danger-soft: #fef2f2;
+      --success: #15803d;
+      --success-soft: #f0fdf4;
+      --wa: #25d366;
+      --call: #0284c7;
+      --info-soft: #e0f2fe;
+      --info-text: #0369a1;
     }
-    #splash {
-      position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10;
-      background: linear-gradient(160deg, #0f2942 0%, #1a3b5c 100%);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      color: #fff; gap: 14px; transition: opacity 0.35s ease; text-align: center; padding: 20px;
+
+    * { box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 92px; }
+
+    /* ================= شاشة الدخول برمز PIN ================= */
+    .pin-overlay {
+      position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 100%);
+      z-index: 4000; display: none; align-items: center; justify-content: center; padding: 20px;
     }
-    #splash.hide { opacity: 0; pointer-events: none; }
-    #splash img {
-      width: 112px; height: 112px; border-radius: 24px;
-      border: 2px solid #c5a028; box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    .pin-overlay.show { display: flex; }
+    .pin-card {
+      background: #fff; width: 100%; max-width: 340px; border-radius: 20px;
+      padding: 24px 20px; text-align: center; border-top: 5px solid var(--gold);
+      box-shadow: 0 24px 50px rgba(0,0,0,0.35);
     }
-    .loader-bar {
-      width: 140px; height: 4px; background: rgba(255,255,255,0.18);
-      border-radius: 4px; overflow: hidden;
+    .pin-logo {
+      width: 58px; height: 58px; margin: 0 auto 10px; border-radius: 15px;
+      background: var(--navy); border: 2px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--teal); font-size: 28px;
     }
-    .loader-bar::after {
-      content: ''; display: block; width: 45%; height: 100%;
-      background: #0d9488; border-radius: 4px;
-      animation: move 1.1s infinite ease-in-out;
+    .pin-card h2 { margin: 0; font-size: 20px; color: var(--navy); font-weight: 800; }
+    .pin-card p { margin: 4px 0 14px; font-size: 12px; color: var(--muted); }
+    .pin-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; min-height: 22px; }
+    .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--navy); transition: 0.15s; }
+    .pin-dot.filled { background: var(--teal); border-color: var(--teal); transform: scale(1.1); }
+    .pin-error { color: var(--danger); font-size: 12px; font-weight: 700; min-height: 18px; margin-bottom: 8px; }
+    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; direction: ltr; }
+    .pin-key {
+      padding: 13px 0; border-radius: 12px; border: 1px solid var(--border);
+      background: #f8fafc; font-size: 18px; font-weight: 800; color: var(--navy); cursor: pointer;
     }
-    @keyframes move {
-      0% { transform: translateX(120%); }
-      100% { transform: translateX(-220%); }
+    .pin-key:active { background: #e2e8f0; }
+    .pin-key.enter { background: var(--teal); color: #fff; border-color: var(--teal); font-size: 14px; }
+    .pin-key.del { background: var(--danger-soft); color: var(--danger); border-color: #fecaca; font-size: 15px; }
+
+    /* ================= الشريط العلوي ================= */
+    header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      color: #fff; padding: 10px 14px; border-bottom: 3px solid var(--gold);
+      position: sticky; top: 0; z-index: 200;
+      box-shadow: 0 3px 10px rgba(15, 41, 66, 0.18);
     }
-    #setupNote {
-      display: none; max-width: 360px; background: rgba(255,255,255,0.1);
-      border: 1px solid #c5a028; border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.7;
+    .header-inner {
+      max-width: 1320px; margin: auto;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
     }
-    iframe {
-      width: 100%; height: 100vh; height: 100dvh; border: none; display: block;
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .menu-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.28);
+      color: #fff; font-size: 19px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand h1 { margin: 0; font-size: 17px; font-weight: 800; line-height: 1.2; }
+    .role-pill {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      background: rgba(197, 160, 40, 0.22); color: #fde68a;
+      border: 1px solid rgba(197, 160, 40, 0.5);
+      padding: 1px 7px; border-radius: 10px; margin-top: 2px;
+    }
+
+    .header-quick { display: flex; align-items: center; gap: 7px; }
+    .desktop-only { display: inline-flex; }
+    @media (max-width: 768px) { .desktop-only { display: none !important; } }
+
+    .btn {
+      border: none; border-radius: 9px; padding: 8px 13px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+      transition: 0.15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--teal); color: #fff; }
+    .btn-primary:hover { background: var(--teal-hover); }
+    .btn-gold { background: var(--gold); color: #fff; }
+    .btn-navy { background: var(--navy); color: #fff; }
+    .btn-outline-light { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.28); }
+    .btn-secondary { background: #e2e8f0; color: var(--navy); }
+    .btn-wa { background: var(--wa); color: #fff; }
+    .btn-call { background: var(--call); color: #fff; }
+    .btn-danger-soft { background: var(--danger-soft); color: var(--danger); border: 1px solid #fecaca; }
+    .btn-icon { background: #f8fafc; color: var(--navy); border: 1px solid var(--border); padding: 6px 9px; }
+
+    /* ================= اللائحة الجانبية (نصف الشاشة) ================= */
+    .drawer-backdrop {
+      position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(15, 41, 66, 0.55); z-index: 1200;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .side-drawer {
+      position: fixed; top: 0; bottom: 0; right: 0;
+      width: 56%; min-width: 240px; max-width: 310px;
+      background: #fff; z-index: 1250;
+      box-shadow: -6px 0 24px rgba(15, 41, 66, 0.25);
+      transform: translateX(105%);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .side-drawer.open { transform: translateX(0); }
+    .drawer-header {
+      background: var(--navy); color: #fff; padding: 14px;
+      border-bottom: 3px solid var(--gold);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .drawer-header h3 { margin: 0; font-size: 15px; font-weight: 800; }
+    .drawer-close {
+      background: rgba(255,255,255,0.14); border: none; color: #fff;
+      width: 30px; height: 30px; border-radius: 8px; font-size: 20px; cursor: pointer;
+    }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 10px 10px 28px; }
+    .drawer-section-title {
+      font-size: 11px; font-weight: 800; color: var(--muted);
+      padding: 8px 8px 4px; margin-top: 4px; border-top: 1px solid var(--border);
+    }
+    .drawer-section-title:first-child { border-top: none; margin-top: 0; }
+    .drawer-item {
+      width: 100%; background: transparent; border: none; border-radius: 9px;
+      padding: 10px; text-align: right; font-size: 13px; font-weight: 700;
+      color: var(--navy); cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px;
+    }
+    .drawer-item:active, .drawer-item:hover { background: #f1f5f9; }
+    .drawer-item.active-filter { background: #f0fdfa; color: var(--teal); border-right: 3px solid var(--teal); }
+    .drawer-badge { background: #e2e8f0; color: var(--navy); font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 800; }
+    .drawer-badge.danger { background: var(--danger-soft); color: var(--danger); }
+
+    .container { max-width: 1320px; margin: 12px auto; padding: 0 12px; }
+
+    /* ================= شريط التنبيه الذكي ================= */
+    .due-banner {
+      display: none;
+      background: linear-gradient(90deg, #fef2f2 0%, #fef9e7 100%);
+      border: 1px solid #fca5a5; border-right: 4px solid var(--danger);
+      border-radius: 11px; padding: 9px 12px; margin-bottom: 10px;
+      align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    }
+    .due-banner.show { display: flex; }
+    .due-text { font-size: 12px; font-weight: 800; color: #991b1b; }
+
+    /* ================= شريط الإحصائيات القابل للطي على الجوال ================= */
+    .mobile-stats-bar {
+      display: none; background: #fff; border: 1px solid var(--border); border-radius: 11px;
+      padding: 9px 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+    .m-stats-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; }
+    .m-stat-mini { flex: 1; min-width: 0; }
+    .m-stat-mini span { display: block; font-size: 10px; color: var(--muted); font-weight: 700; }
+    .m-stat-mini strong { font-size: 15px; font-weight: 800; }
+    .m-stats-toggle {
+      background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px;
+      padding: 4px 8px; font-size: 11px; font-weight: 700; color: var(--navy); cursor: pointer;
+    }
+    .m-stats-expanded { display: none; margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--border); }
+    .m-stats-expanded.open { display: block; }
+    .m-stats-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+    .m-stat-subbox { background: #f8fafc; border-radius: 8px; padding: 7px 9px; }
+    .m-stat-subbox span { display: block; font-size: 10px; color: var(--muted); }
+    .m-stat-subbox strong { font-size: 14px; color: var(--navy); }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+    @media (max-width: 768px) {
+      .stats-grid { display: none; }
+      .mobile-stats-bar { display: block; }
+    }
+    .stat-card {
+      background: var(--card); border-radius: 11px; padding: 12px 14px;
+      border: 1px solid var(--border); border-right: 4px solid var(--navy);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+    .stat-card.teal { border-right-color: var(--teal); }
+    .stat-card.danger { border-right-color: var(--danger); }
+    .stat-card.gold { border-right-color: var(--gold); cursor: pointer; }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 700; display: flex; justify-content: space-between; }
+    .stat-value { font-size: 19px; font-weight: 800; color: var(--navy); margin-top: 2px; }
+    .stat-card.teal .stat-value { color: var(--teal); }
+    .stat-card.danger .stat-value { color: var(--danger); }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ================= البحث والمنسدلات المطوّرة ================= */
+    .filter-panel {
+      background: var(--card); border-radius: 12px; padding: 10px;
+      border: 1px solid var(--border); margin-bottom: 12px;
+    }
+    .search-box-wrap { position: relative; margin-bottom: 8px; }
+    .search-input {
+      width: 100%; padding: 9px 12px 9px 34px; border: 1px solid var(--border);
+      border-radius: 9px; font-size: 13px; outline: none; background: #f8fafc; color: var(--text);
+    }
+    .search-input:focus { border-color: var(--teal); background: #fff; }
+    .search-clear {
+      position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+      background: #e2e8f0; border: none; border-radius: 50%; width: 22px; height: 22px;
+      font-size: 13px; color: var(--navy); cursor: pointer; display: none;
+    }
+    .picker-triggers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .picker-btn {
+      background: #f8fafc; border: 1px solid var(--border); border-radius: 9px;
+      padding: 6px 9px; text-align: right; cursor: pointer;
+      display: flex; flex-direction: column; position: relative; min-width: 0;
+    }
+    .picker-btn.active { border-color: var(--teal); background: #f0fdfa; }
+    .picker-btn-label { font-size: 10px; color: var(--muted); font-weight: 700; }
+    .picker-btn-val {
+      font-size: 12px; font-weight: 800; color: var(--navy);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 13px;
+    }
+    .picker-btn::after { content: '▾'; position: absolute; left: 7px; bottom: 6px; font-size: 12px; color: var(--teal); }
+
+    /* ================= جدول الكمبيوتر ================= */
+    .table-wrapper {
+      background: var(--card); border-radius: 12px; border: 1px solid var(--border);
+      overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 920px; }
+    th {
+      background: #f8fafc; color: var(--navy); font-weight: 700; font-size: 12px;
+      padding: 12px 10px; text-align: right; border-bottom: 2px solid var(--border); white-space: nowrap;
+    }
+    td { padding: 11px 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    tr:hover td { background: #f8fafc; }
+
+    .student-name { font-weight: 800; color: var(--navy); font-size: 14px; cursor: pointer; }
+    .student-sub { font-size: 11px; color: var(--muted); }
+    .badges-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .badge-grade { background: var(--info-soft); color: var(--info-text); }
+    .badge-paid { background: var(--success-soft); color: var(--success); }
+    .badge-verify-ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-verify-warn { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .badge-verify-dispute { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .badge-family { background: var(--navy); color: #fff; cursor: pointer; }
+    .badge-frozen { background: #e2e8f0; color: #475569; }
+    .badge-postpone { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .badge-due { background: var(--danger-soft); color: var(--danger); border: 1px solid #fecaca; }
+
+    .money-rem { color: var(--danger); font-weight: 800; white-space: nowrap; }
+    .money-ok { color: var(--success); font-weight: 800; white-space: nowrap; }
+    .actions-cell { display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; }
+    .empty-state { text-align: center; padding: 36px 16px; color: var(--muted); font-size: 13px; }
+
+    /* ================= بطاقات الجوال + شريط التقدم المالي ================= */
+    .mobile-cards { display: none; }
+    @media (max-width: 768px) {
+      .table-wrapper { display: none; }
+      .mobile-cards { display: flex; flex-direction: column; gap: 9px; }
+    }
+    .m-card {
+      background: #fff; border-radius: 12px; padding: 11px 12px;
+      border: 1px solid var(--border); border-right: 4px solid var(--teal);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .m-card.overdue { border-right-color: var(--danger); }
+    .m-card.settled { border-right-color: var(--success); }
+    .m-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; cursor: pointer; }
+    .m-card-left { text-align: left; flex-shrink: 0; }
+    .m-rem-label { font-size: 10px; color: var(--muted); display: block; }
+    .m-rem-val { font-size: 16px; font-weight: 800; line-height: 1.1; }
+
+    .prog-wrap { margin: 8px 0 6px; cursor: pointer; }
+    .prog-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-bottom: 3px; font-weight: 700; }
+    .prog-track { width: 100%; height: 6px; background: #fecaca; border-radius: 10px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--teal); border-radius: 10px; transition: width 0.3s ease; }
+
+    .m-card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .m-card-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+    .m-card-bar .btn { padding: 7px 2px; font-size: 11px; border-radius: 8px; }
+
+    /* ================= الشريط السفلي الثابت + الزر العائم ================= */
+    .bottom-nav {
+      display: none; position: fixed; bottom: 0; right: 0; left: 0;
+      background: #ffffff; border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(15, 41, 66, 0.08); z-index: 300;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+      grid-template-columns: repeat(4, 1fr);
+    }
+    @media (max-width: 768px) { .bottom-nav { display: grid; } }
+    .bnav-item {
+      background: none; border: none; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      color: var(--muted); font-size: 11px; font-weight: 700; padding: 3px 0; position: relative;
+    }
+    .bnav-item .bnav-ico { font-size: 18px; line-height: 1.1; }
+    .bnav-item.active { color: var(--teal); }
+    .bnav-dot {
+      position: absolute; top: 0; left: 26%;
+      background: var(--danger); color: #fff; font-size: 9px; font-weight: 800;
+      padding: 0 5px; border-radius: 10px; min-width: 16px; display: none;
+    }
+    .bnav-dot.show { display: inline-block; }
+
+    .fab-add {
+      display: none; position: fixed; left: 16px; bottom: 72px; z-index: 310;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal) 0%, var(--navy) 100%);
+      color: #fff; border: 2px solid var(--gold);
+      font-size: 26px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 6px 18px rgba(15, 41, 66, 0.35);
+      align-items: center; justify-content: center;
+    }
+    @media (max-width: 768px) { .fab-add { display: flex; } }
+
+    /* ================= النوافذ المنبثقة والـ Bottom Sheet ================= */
+    .modal-backdrop {
+      position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(15, 41, 66, 0.6); display: none; align-items: center; justify-content: center;
+      z-index: 1500; padding: 12px;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      background: #fff; border-radius: 14px; width: 100%; max-width: 580px;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.28);
+      border-top: 4px solid var(--teal);
+    }
+    @media (max-width: 640px) {
+      .modal-backdrop.sheet-mobile { align-items: flex-end; padding: 0; }
+      .modal-backdrop.sheet-mobile .modal {
+        max-width: 100%; border-radius: 18px 18px 0 0; max-height: 88vh; border-top: 4px solid var(--gold);
+      }
+    }
+    .modal-header {
+      padding: 13px 16px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: #fff; z-index: 5;
+    }
+    .modal-header h3 { margin: 0; color: var(--navy); font-size: 15px; font-weight: 800; }
+    .close-btn { background: #f1f5f9; border: none; width: 30px; height: 30px; border-radius: 8px; font-size: 20px; color: var(--navy); cursor: pointer; }
+    .modal-body { padding: 14px 16px; }
+    .modal-footer {
+      padding: 11px 16px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px; background: #f8fafc;
+      position: sticky; bottom: 0;
+    }
+
+    .picker-list { display: flex; flex-direction: column; gap: 6px; }
+    .picker-option {
+      width: 100%; padding: 11px 13px; border-radius: 10px;
+      border: 1px solid var(--border); background: #fff;
+      font-size: 13px; font-weight: 700; color: var(--navy);
+      cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-align: right;
+    }
+    .picker-option.selected { background: #f0fdfa; border-color: var(--teal); color: var(--teal); }
+    .picker-count { background: #f1f5f9; color: var(--muted); font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+    .picker-option.selected .picker-count { background: var(--teal); color: #fff; }
+
+    .detail-money-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 11px; }
+    .detail-money-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; }
+    .detail-money-box span { display: block; font-size: 10px; color: var(--muted); font-weight: 700; }
+    .detail-money-box strong { font-size: 15px; font-weight: 800; color: var(--navy); }
+    .detail-money-box.rem { background: var(--danger-soft); border-color: #fecaca; }
+    .detail-money-box.rem strong { color: var(--danger); }
+
+    .quick-outcome-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 12px; }
+    .quick-outcome-title { font-size: 11px; font-weight: 800; color: var(--navy); margin-bottom: 7px; }
+    .quick-outcome-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .outcome-btn {
+      background: #fff; border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 8px; font-size: 11px; font-weight: 700; color: var(--navy); cursor: pointer;
+    }
+    .outcome-btn:active { background: #e0f2fe; border-color: var(--teal); }
+
+    .detail-info-list { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 4px 12px; margin-bottom: 12px; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row span { color: var(--muted); font-weight: 700; flex-shrink: 0; }
+    .detail-row strong { color: var(--navy); text-align: left; }
+    .detail-actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .detail-actions-grid .btn { padding: 9px 7px; font-size: 12px; }
+
+    .grade-row-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; margin-bottom: 8px; cursor: pointer; }
+    .grade-row-card:hover { border-color: var(--teal); background: #f8fafc; }
+    .grade-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+
+    .statement-canvas-wrap { text-align: center; background: #e2e8f0; padding: 10px; border-radius: 10px; margin-bottom: 12px; }
+    .statement-canvas-wrap img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+
+    .qr-preview-box {
+      display: flex; align-items: center; gap: 12px; background: #fff;
+      border: 1px dashed var(--teal); border-radius: 9px; padding: 10px; margin-top: 6px;
+    }
+    .qr-preview-box img { width: 72px; height: 72px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); }
+
+    .input-control, .select-control, .textarea-control {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 13px; outline: none; background: #fff; color: var(--text);
+    }
+    .input-control:focus, .select-control:focus, .textarea-control:focus {
+      border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 10px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--navy); cursor: pointer; }
+
+    .info-box { background: #f0fdfa; border: 1px solid #99f6e4; color: #115e59; padding: 10px 12px; border-radius: 9px; font-size: 12px; margin-bottom: 12px; line-height: 1.65; }
+    .receipt-box { background: #f0fdf4; border: 2px dashed #15803d; border-radius: 10px; padding: 16px; text-align: center; }
+    .tpl-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .tpl-tab { flex: 1; min-width: 95px; padding: 8px 6px; border-radius: 8px; border: 1px solid var(--border); background: #f8fafc; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--navy); }
+    .tpl-tab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .session-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+    .session-counter { font-size: 12px; font-weight: 800; color: var(--teal); margin-bottom: 6px; }
+    .session-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .history-item { padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+    .tag-btn { font-size: 11px; background: #e2e8f0; border: none; border-radius: 5px; padding: 4px 8px; cursor: pointer; color: var(--navy); font-weight: 700; }
+    .settings-section { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #f8fafc; }
+    .settings-section h4 { margin: 0 0 10px; font-size: 13px; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .admin-only { display: block; }
+    body.role-staff .admin-only { display: none !important; }
+
+    .loader-overlay {
+      position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(255,255,255,0.82); display: none;
+      align-items: center; justify-content: center; z-index: 4500; flex-direction: column; gap: 10px;
+    }
+    .loader-overlay.show { display: flex; }
+    .spinner { width: 38px; height: 38px; border: 4px solid #e2e8f0; border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed; bottom: 76px; left: 16px; right: 16px; max-width: 380px; margin: auto; z-index: 4600;
+      background: var(--navy); color: #fff; padding: 11px 16px; border-radius: 10px;
+      font-size: 13px; font-weight: 700; border-right: 4px solid var(--gold);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.24); display: none; text-align: center;
+    }
+    .toast.show { display: block; }
+
+    @media print {
+      header, .filter-panel, .due-banner, .actions-cell, th:last-child, td:last-child, .mobile-cards, .side-drawer, .drawer-backdrop, .bottom-nav, .fab-add, .mobile-stats-bar { display: none !important; }
+      .table-wrapper { display: block !important; border: none; box-shadow: none; overflow: visible; }
+      .stats-grid { display: grid !important; }
+      body { background: #fff; padding: 0; }
+      table { min-width: 100%; font-size: 11px; }
     }
   </style>
 </head>
 <body>
-  <div id="splash">
-    <img src="icon.png" alt="أرشيف الذمم">
-    <h2 style="font-size:20px; font-weight:700;">أرشيف الذمم</h2>
-    <div class="loader-bar" id="loaderBar"></div>
-    <div id="setupNote">
-      تنبيه التفعيل: يرجى فتح ملف <strong>index.html</strong> واستبدال عبارة <code>ضع_رابط_تطبيق_Apps_Script_هنا</code> برابط Web App الخاص بك المنتهي بـ <code>/exec</code>.
+
+  <!-- شاشة الدخول برمز PIN -->
+  <div class="pin-overlay" id="pinOverlay">
+    <div class="pin-card">
+      <div class="pin-logo">📑</div>
+      <h2>أرشيف الذمم</h2>
+      <p>أدخل رمز الدخول المكون من 4 أرقام</p>
+      <div class="pin-dots" id="pinDots">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <div class="pin-error" id="pinError"></div>
+      <div class="pin-pad">
+        <button type="button" class="pin-key" onclick="enterPinDigit('1')">1</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('2')">2</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('3')">3</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('4')">4</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('5')">5</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('6')">6</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('7')">7</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('8')">8</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('9')">9</button>
+        <button type="button" class="pin-key del" onclick="backspacePin()">⌫</button>
+        <button type="button" class="pin-key" onclick="enterPinDigit('0')">0</button>
+        <button type="button" class="pin-key enter" onclick="submitPinLogin()">دخول</button>
+      </div>
     </div>
   </div>
 
-  <iframe id="appFrame" allow="clipboard-write; web-share"></iframe>
+  <!-- الشريط العلوي -->
+  <header>
+    <div class="header-inner">
+      <div class="header-right">
+        <button type="button" class="menu-btn" onclick="openDrawer()" aria-label="القائمة">☰</button>
+        <div class="brand">
+          <h1>أرشيف الذمم</h1>
+          <span class="role-pill" id="headerRoleBadge">الإدارة</span>
+        </div>
+      </div>
+      <div class="header-quick">
+        <button type="button" class="btn btn-primary desktop-only" onclick="openStudentModal()">+ طالب</button>
+        <button type="button" class="btn btn-gold desktop-only" onclick="openQuickSession()">⚡ جلسة مطالبة</button>
+        <button type="button" class="btn btn-outline-light desktop-only" onclick="openGradeSummaryModal()">📊 الصفوف</button>
+        <button type="button" class="btn btn-outline-light desktop-only admin-only" onclick="openSettingsModal()">⚙ الإعدادات</button>
+        <button type="button" class="btn btn-outline-light" onclick="loadData()" title="تحديث">↻</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- اللائحة الجانبية نصف الشاشة -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+  <aside class="side-drawer" id="sideDrawer">
+    <div class="drawer-header">
+      <h3>📑 أرشيف الذمم</h3>
+      <button type="button" class="drawer-close" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section-title">الأدوات والتقارير</div>
+      <button type="button" class="drawer-item" onclick="closeDrawer(); openStudentModal();"><span>➕ إضافة ذمة طالب</span></button>
+      <button type="button" class="drawer-item" onclick="closeDrawer(); openGradeSummaryModal();"><span>📊 ملخص الديون حسب الصفوف</span></button>
+      <button type="button" class="drawer-item" onclick="closeDrawer(); openQuickSession(false);"><span>⚡ جلسة مطالبة سريعة</span></button>
+      <button type="button" class="drawer-item" onclick="closeDrawer(); openTodayBoxModal();"><span>💰 صندوق تحصيل اليوم</span></button>
+      <button type="button" class="drawer-item" onclick="closeDrawer(); openBulkModal();"><span>📥 استيراد من إكسل</span></button>
+      <button type="button" class="drawer-item admin-only" onclick="closeDrawer(); openSettingsModal();"><span>⚙ الإعدادات وشام كاش والمنبّه</span></button>
+      <button type="button" class="drawer-item" onclick="closeDrawer(); window.print();"><span>🖨 طباعة الكشف</span></button>
+
+      <div class="drawer-section-title">تصفية سريعة بالحالة</div>
+      <button type="button" class="drawer-item" data-dstatus="ALL" onclick="selectStatus('ALL'); closeDrawer();"><span>📋 الكل (النشط)</span><span class="drawer-badge" id="dCountALL">0</span></button>
+      <button type="button" class="drawer-item" data-dstatus="DUE" onclick="selectStatus('DUE'); closeDrawer();"><span>🔔 مستحق المتابعة</span><span class="drawer-badge danger" id="dCountDUE">0</span></button>
+      <button type="button" class="drawer-item" data-dstatus="REMAINING" onclick="selectStatus('REMAINING'); closeDrawer();"><span>⏳ عليهم متبقي</span><span class="drawer-badge" id="dCountREMAINING">0</span></button>
+      <button type="button" class="drawer-item" data-dstatus="UNPAID" onclick="selectStatus('UNPAID'); closeDrawer();"><span>❗ لم يسددوا شيئاً</span><span class="drawer-badge" id="dCountUNPAID">0</span></button>
+      <button type="button" class="drawer-item" data-dstatus="NEEDS_VERIFY" onclick="selectStatus('NEEDS_VERIFY'); closeDrawer();"><span>🔍 يحتاج مطابقة</span><span class="drawer-badge" id="dCountVERIFY">0</span></button>
+      <button type="button" class="drawer-item" data-dstatus="RECENT" onclick="selectStatus('RECENT'); closeDrawer();"><span>🕒 مسدد حديثاً</span><span class="drawer-badge" id="dCountRECENT">0</span></button>
+      <button type="button" class="drawer-item" data-dstatus="PAID_FULL" onclick="selectStatus('PAID_FULL'); closeDrawer();"><span>✅ مسدد بالكامل</span><span class="drawer-badge" id="dCountPAID">0</span></button>
+      <button type="button" class="drawer-item" data-dstatus="FROZEN" onclick="selectStatus('FROZEN'); closeDrawer();"><span>❄️ الديون المجمّدة</span><span class="drawer-badge" id="dCountFROZEN">0</span></button>
+
+      <div class="drawer-section-title">الحساب</div>
+      <button type="button" class="drawer-item" style="color:var(--danger);" onclick="closeDrawer(); logoutUser();"><span>🔒 قفل / تبديل المستخدم</span></button>
+    </div>
+  </aside>
+
+  <div class="container">
+    <!-- شريط التنبيه الذكي -->
+    <div id="dueAlertBanner" class="due-banner">
+      <div class="due-text" id="dueAlertText"></div>
+      <div style="display:flex; gap:6px;">
+        <button type="button" class="btn btn-navy" style="padding:5px 10px; font-size:11px;" onclick="selectStatus('DUE')">عرض</button>
+        <button type="button" class="btn btn-gold" style="padding:5px 10px; font-size:11px;" onclick="openQuickSession(true)">⚡ مطالبة</button>
+      </div>
+    </div>
+
+    <!-- شريط الإحصائيات القابل للطي على الجوال -->
+    <div class="mobile-stats-bar">
+      <div class="m-stats-top" onclick="toggleMobileStats()">
+        <div class="m-stat-mini"><span>صافي المتبقي لنا</span><strong style="color:var(--danger);" id="mStatRem">0</strong></div>
+        <div class="m-stat-mini"><span>تحصيل اليوم</span><strong style="color:var(--teal);" id="mStatToday">0</strong></div>
+        <button type="button" class="m-stats-toggle" id="mStatsToggleBtn">التفاصيل ▾</button>
+      </div>
+      <div class="m-stats-expanded" id="mStatsExpanded">
+        <div class="m-stats-grid2">
+          <div class="m-stat-subbox"><span>إجمالي الأقساط</span><strong id="mStatTotal">0</strong></div>
+          <div class="m-stat-subbox"><span>إجمالي المسدد</span><strong style="color:var(--teal);" id="mStatPaid">0</strong></div>
+          <div class="m-stat-subbox"><span>تحصيل هذا الشهر</span><strong id="mStatMonth">0</strong></div>
+          <div class="m-stat-subbox"><span>العدد / لم يدفعوا</span><strong id="mStatCounts">0 / 0</strong></div>
+        </div>
+        <button type="button" class="btn btn-navy" style="width:100%; font-size:12px; padding:7px;" onclick="openGradeSummaryModal()">📊 عرض ملخص الديون حسب الصفوف</button>
+      </div>
+    </div>
+
+    <!-- بطاقات الإحصائيات للكمبيوتر -->
+    <div class="stats-grid">
+      <div class="stat-card danger"><div class="stat-label">المتبقي لنا</div><div class="stat-value" id="statRemaining">0</div><div class="stat-sub" id="statZeroPaid">0 لم يدفعوا</div></div>
+      <div class="stat-card teal"><div class="stat-label">المسدد</div><div class="stat-value" id="statPaid">0</div><div class="stat-sub" id="statPercent">0% تحصيل</div></div>
+      <div class="stat-card"><div class="stat-label">إجمالي الأقساط</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub" id="statCount">0 طالب</div></div>
+      <div class="stat-card gold" onclick="openTodayBoxModal()"><div class="stat-label"><span>صندوق اليوم</span><span style="color:#854d0e;">كشف ◂</span></div><div class="stat-value" id="statTodayBox">0</div><div class="stat-sub" id="statMonthBox">الشهر: 0</div></div>
+    </div>
+
+    <!-- البحث والمنسدلات المطوّرة -->
+    <div class="filter-panel">
+      <div class="search-box-wrap">
+        <input type="text" id="searchInput" class="search-input" placeholder="ابحث بالاسم، الهاتف، السكن، أو الملاحظات..." oninput="onSearchInput()">
+        <button type="button" id="searchClearBtn" class="search-clear" onclick="clearSearch()">&times;</button>
+      </div>
+      <div class="picker-triggers">
+        <button type="button" class="picker-btn" id="btnPickGrade" onclick="openPicker('grade')"><span class="picker-btn-label">الصف</span><span class="picker-btn-val" id="lblGrade">جميع الصفوف</span></button>
+        <button type="button" class="picker-btn" id="btnPickStatus" onclick="openPicker('status')"><span class="picker-btn-label">الحالة</span><span class="picker-btn-val" id="lblStatus">الكل (النشط)</span></button>
+        <button type="button" class="picker-btn" id="btnPickSort" onclick="openPicker('sort')"><span class="picker-btn-label">الترتيب</span><span class="picker-btn-val" id="lblSort">الأعلى متبقياً</span></button>
+      </div>
+    </div>
+
+    <!-- جدول الكمبيوتر -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>الطالب والتوثيق</th>
+            <th>التواصل وآخر مطالبة</th>
+            <th>التقدّم المالي</th>
+            <th>المتبقي</th>
+            <th>موعد السداد</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="studentsTableBody">
+          <tr><td colspan="6" class="empty-state">جاري تحميل البيانات...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- بطاقات الجوال -->
+    <div class="mobile-cards" id="mobileCardsContainer">
+      <div class="m-card empty-state">جاري تحميل البيانات...</div>
+    </div>
+  </div>
+
+  <!-- الزر العائم + لإضافة طالب على الجوال -->
+  <button type="button" class="fab-add" onclick="openStudentModal()" aria-label="إضافة طالب">+</button>
+
+  <!-- الشريط السفلي الثابت على الجوال -->
+  <nav class="bottom-nav">
+    <button type="button" class="bnav-item active" id="bnavAll" onclick="switchBottomTab('all')"><span class="bnav-ico">📑</span><span>الذمم</span></button>
+    <button type="button" class="bnav-item" id="bnavDue" onclick="switchBottomTab('due')"><span class="bnav-ico">🔔</span><span>المواعيد</span><span class="bnav-dot" id="bnavDueDot">0</span></button>
+    <button type="button" class="bnav-item" id="bnavSession" onclick="switchBottomTab('session')"><span class="bnav-ico">⚡</span><span>الجلسة</span></button>
+    <button type="button" class="bnav-item" id="bnavBox" onclick="switchBottomTab('box')"><span class="bnav-ico">💰</span><span>الصندوق</span></button>
+  </nav>
+
+  <!-- نافذة المنسدلات السفلية -->
+  <div class="modal-backdrop sheet-mobile" id="pickerModal" onclick="backdropClose(event, 'pickerModal')">
+    <div class="modal" style="max-width:460px;">
+      <div class="modal-header"><h3 id="pickerModalTitle">اختر</h3><button type="button" class="close-btn" onclick="closeModal('pickerModal')">&times;</button></div>
+      <div class="modal-body"><div class="picker-list" id="pickerListBody"></div></div>
+    </div>
+  </div>
+
+  <!-- نافذة تفاصيل الطالب -->
+  <div class="modal-backdrop sheet-mobile" id="detailsModal" onclick="backdropClose(event, 'detailsModal')">
+    <div class="modal">
+      <div class="modal-header"><h3 id="detailsModalTitle">تفاصيل الطالب</h3><button type="button" class="close-btn" onclick="closeModal('detailsModal')">&times;</button></div>
+      <div class="modal-body" id="detailsModalBody"></div>
+    </div>
+  </div>
+
+  <!-- نافذة ملخص الديون حسب الصفوف -->
+  <div class="modal-backdrop sheet-mobile" id="gradeSummaryModal" onclick="backdropClose(event, 'gradeSummaryModal')">
+    <div class="modal">
+      <div class="modal-header"><h3>📊 ملخص الديون حسب الصفوف</h3><button type="button" class="close-btn" onclick="closeModal('gradeSummaryModal')">&times;</button></div>
+      <div class="modal-body" id="gradeSummaryBody"></div>
+    </div>
+  </div>
+
+  <!-- نافذة بطاقة كشف الحساب المصوّرة مع باركود شام كاش -->
+  <div class="modal-backdrop sheet-mobile" id="statementModal" onclick="backdropClose(event, 'statementModal')">
+    <div class="modal">
+      <div class="modal-header"><h3>🧾 كشف حساب مصوّر (شامل باركود شام كاش)</h3><button type="button" class="close-btn" onclick="closeModal('statementModal')">&times;</button></div>
+      <div class="modal-body">
+        <div class="statement-canvas-wrap" id="statementPreviewWrap">جاري تجهيز البطاقة...</div>
+        <canvas id="statementCanvas" style="display:none;"></canvas>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <button type="button" class="btn btn-wa" style="padding:10px;" onclick="shareStatementPng()">📤 مشاركة لواتساب</button>
+          <button type="button" class="btn btn-navy" style="padding:10px;" onclick="downloadStatementPng()">⬇ حفظ الصورة (PNG)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة بطاقة المطالبة المصوّرة المختصرة (الخيار 4) -->
+  <div class="modal-backdrop sheet-mobile" id="claimCardModal" onclick="backdropClose(event, 'claimCardModal')">
+    <div class="modal">
+      <div class="modal-header"><h3>🖼 بطاقة مطالبة مصوّرة (مع باركود شام كاش)</h3><button type="button" class="close-btn" onclick="closeModal('claimCardModal')">&times;</button></div>
+      <div class="modal-body">
+        <div class="statement-canvas-wrap" id="claimCardPreviewWrap">جاري تجهيز بطاقة المطالبة...</div>
+        <canvas id="claimCardCanvas" style="display:none;"></canvas>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+          <button type="button" class="btn btn-wa" style="padding:10px;" onclick="shareClaimCardPng()">📤 مشاركة لواتساب</button>
+          <button type="button" class="btn btn-navy" style="padding:10px;" onclick="downloadClaimCardPng()">⬇ حفظ الصورة</button>
+        </div>
+        <button type="button" class="btn btn-secondary" id="btnSendShamOnlyClaim" style="width:100%; padding:9px; font-size:12px; display:none;" onclick="sendShamCodeOnlyWa()">📋 إرسال رمز شام كاش وحده برسالة منفصلة (لسهولة النسخ)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة إضافة / تعديل طالب -->
+  <div class="modal-backdrop" id="studentModal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="studentModalTitle">إضافة ذمة طالب</h3><button type="button" class="close-btn" onclick="closeModal('studentModal')">&times;</button></div>
+      <div class="modal-body">
+        <input type="hidden" id="fId">
+        <div class="form-grid">
+          <div class="form-group"><label>اسم الطالب *</label><input type="text" id="fName" class="input-control" placeholder="الاسم الثلاثي"></div>
+          <div class="form-group">
+            <label>الصف *</label>
+            <select id="fGrade" class="select-control">
+              <option value="الروضة">الروضة</option><option value="الأول">الأول</option>
+              <option value="الثاني">الثاني</option><option value="الثالث">الثالث</option>
+              <option value="الرابع">الرابع</option><option value="الخامس">الخامس</option>
+              <option value="السادس">السادس</option><option value="السابع">السابع</option>
+              <option value="الثامن">الثامن</option><option value="التاسع">التاسع</option>
+              <option value="العاشر">العاشر</option><option value="الحادي عشر">الحادي عشر</option>
+              <option value="البكالوريا">البكالوريا</option><option value="متخرج / منسحب">متخرج / منسحب</option>
+            </select>
+          </div>
+          <div class="form-group"><label>رقم التواصل (واتساب / اتصال)</label><input type="tel" id="fPhone" class="input-control" placeholder="09xxxxxxxx" dir="ltr"></div>
+          <div class="form-group"><label>موقع السكن (اختياري)</label><input type="text" id="fAddress" class="input-control" placeholder="الحي أو القرية"></div>
+          <div class="form-group"><label>القسط الأساسي *</label><input type="text" id="fTotal" class="input-control" placeholder="0" oninput="previewRemaining()"></div>
+          <div class="form-group"><label>المبلغ المدفوع</label><input type="text" id="fPaid" class="input-control" value="0" oninput="previewRemaining()"></div>
+          <div class="form-group admin-only"><label>خصم التسوية (للإدارة فقط)</label><input type="text" id="fDiscount" class="input-control" value="0" oninput="previewRemaining()"></div>
+          <div class="form-group"><label>صافي المتبقي (تلقائي)</label><input type="text" id="fRemainingPreview" class="input-control" readonly style="background:#f8fafc; font-weight:800; color:var(--danger);"></div>
+          <div class="form-group">
+            <label>حالة توثيق الرقم</label>
+            <select id="fVerify" class="select-control">
+              <option value="مؤكد">مؤكد بإيصال / سجل</option>
+              <option value="يحتاج مطابقة">يحتاج مطابقة مع الأهل</option>
+              <option value="متنازع عليه">متنازع عليه</option>
+            </select>
+          </div>
+          <div class="form-group"><label>موعد السداد القادم</label><input type="date" id="fPromiseDate" class="input-control"></div>
+          <div class="form-group"><label>القسط الشهري (للتقسيط)</label><input type="text" id="fMonthly" class="input-control" value="0"></div>
+          <div class="form-group"><label>تاريخ آخر دفعة</label><input type="date" id="fLastDate" class="input-control"></div>
+          <div class="form-group full admin-only"><label class="checkbox-row"><input type="checkbox" id="fFrozen"> تصنيف كـ «دين مجمّد / متعثر جداً»</label></div>
+          <div class="form-group full"><label>السنة الدراسية / ملاحظات</label><textarea id="fNotes" class="textarea-control" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('studentModal')">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="saveStudent()">حفظ البيانات</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تسجيل دفعة + سند قبض -->
+  <div class="modal-backdrop sheet-mobile" id="paymentModal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="paymentModalTitle">تسجيل دفعة جديدة</h3><button type="button" class="close-btn" onclick="closeModal('paymentModal')">&times;</button></div>
+      <div class="modal-body" id="paymentFormSection">
+        <input type="hidden" id="pStudentId">
+        <div style="background:#f8fafc; padding:11px; border-radius:9px; border:1px solid var(--border); margin-bottom:12px;">
+          <div style="font-weight:800; color:var(--navy); font-size:14px;" id="pStudentName"></div>
+          <div style="font-size:12px; color:var(--muted); margin-top:4px; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+            <span>المتبقي: <strong style="color:var(--danger);" id="pCurrentRemaining"></strong></span>
+            <button type="button" class="tag-btn" onclick="fillFullRemaining()">كامل المتبقي</button>
+            <button type="button" class="tag-btn" id="btnFillMonthly" style="display:none;" onclick="fillMonthlyInstallment()">القسط الشهري</button>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>قيمة الدفعة المستلمة *</label><input type="text" id="pAmount" class="input-control" placeholder="أدخل المبلغ"></div>
+          <div class="form-group admin-only"><label>خصم تسوية إضافي (للإدارة فقط)</label><input type="text" id="pDiscount" class="input-control" value="0"></div>
+          <div class="form-group"><label>تاريخ القبض *</label><input type="date" id="pDate" class="input-control"></div>
+          <div class="form-group"><label>رقم الإيصال / ملاحظة</label><input type="text" id="pNote" class="input-control" placeholder="وصل رقم... أو حوالة شام كاش"></div>
+          <div class="form-group full"><label class="checkbox-row"><input type="checkbox" id="pAutoRollover"> ترحيل موعد السداد والمنبّه تلقائياً للشهر القادم</label></div>
+        </div>
+      </div>
+      <div class="modal-body" id="receiptSuccessSection" style="display:none;">
+        <div class="receipt-box">
+          <div style="font-size:28px; margin-bottom:4px;">✅</div>
+          <h3 style="margin:0 0 6px; color:var(--success); font-size:16px;">تم تسجيل الدفعة بنجاح</h3>
+          <div id="receiptSummaryText" style="font-size:13px; color:var(--navy); line-height:1.8; margin-bottom:14px;"></div>
+          <button type="button" class="btn btn-wa" style="padding:10px 16px; width:100%;" onclick="sendWhatsAppReceipt()">📤 إرسال سند قبض فوري عبر واتساب</button>
+        </div>
+      </div>
+      <div class="modal-footer" id="paymentFooter">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('paymentModal')">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="submitPayment()">تأكيد وتسجيل الدفعة</button>
+      </div>
+      <div class="modal-footer" id="receiptFooter" style="display:none;">
+        <button type="button" class="btn btn-navy" style="width:100%;" onclick="closeModal('paymentModal')">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تحديد / تأجيل موعد السداد -->
+  <div class="modal-backdrop sheet-mobile" id="promiseModal">
+    <div class="modal">
+      <div class="modal-header"><h3>تحديد أو تأجيل موعد سداد</h3><button type="button" class="close-btn" onclick="closeModal('promiseModal')">&times;</button></div>
+      <div class="modal-body">
+        <input type="hidden" id="prStudentId">
+        <div style="background:#f8fafc; padding:10px 12px; border-radius:9px; border:1px solid var(--border); margin-bottom:12px;">
+          <strong id="prStudentName" style="color:var(--navy); font-size:14px;"></strong>
+          <div id="prCurrentInfo" style="font-size:11px; color:var(--muted); margin-top:3px;"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>تاريخ الوعد / السداد القادم *</label><input type="date" id="prDate" class="input-control"></div>
+          <div class="form-group"><label>القسط الشهري (اختياري)</label><input type="text" id="prMonthly" class="input-control" placeholder="0"></div>
+          <div class="form-group full"><label>ملاحظة سريعة</label><input type="text" id="prNote" class="input-control" placeholder="مثال: وعد بالدفع أول الشهر"></div>
+          <div class="form-group full" id="prPostponeWrap"><label class="checkbox-row"><input type="checkbox" id="prCountPostpone" checked> احتساب هذا التغيير كـ «تأجيل موعد»</label></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('promiseModal')">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="submitPromise()">حفظ وتحديث المنبّه</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة قوالب واتساب -->
+  <div class="modal-backdrop sheet-mobile" id="waModal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="waModalTitle">إرسال مطالبة عبر واتساب</h3><button type="button" class="close-btn" onclick="closeModal('waModal')">&times;</button></div>
+      <div class="modal-body">
+        <div class="tpl-tabs">
+          <button type="button" class="tpl-tab active" id="tabFriendly" onclick="selectWaTemplate('friendly')">1. مطابقة ودية</button>
+          <button type="button" class="tpl-tab" id="tabReminder" onclick="selectWaTemplate('reminder')">2. تذكير موعد</button>
+          <button type="button" class="tpl-tab" id="tabFinal" onclick="selectWaTemplate('final')">3. تسوية / نهائية</button>
+        </div>
+        <div class="form-group"><label>نص الرسالة (شامل تفاصيل شام كاش إن كانت مفعّلة):</label><textarea id="waPreviewText" class="textarea-control" rows="7"></textarea></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+          <button type="button" class="btn btn-gold" style="font-size:12px; padding:8px;" onclick="switchWaToClaimCard()">🖼 بطاقة مصوّرة بالباركود</button>
+          <button type="button" class="btn btn-secondary" id="btnWaSendCodeOnly" style="font-size:12px; padding:8px;" onclick="sendShamCodeOnlyFromWaModal()">📋 إرسال الرمز وحده</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('waModal')">إلغاء</button>
+        <button type="button" class="btn btn-wa" onclick="confirmSendWhatsApp()">فتح واتساب وتوثيق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة ذمة العائلة -->
+  <div class="modal-backdrop sheet-mobile" id="familyModal">
+    <div class="modal">
+      <div class="modal-header"><h3>👨‍👩‍👧‍👦 ذمة العائلة (الأشقاء)</h3><button type="button" class="close-btn" onclick="closeModal('familyModal')">&times;</button></div>
+      <div class="modal-body" id="familyModalBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('familyModal')">إغلاق</button>
+        <button type="button" class="btn btn-wa" onclick="sendFamilyWhatsApp()">رسالة واتساب جامعة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة جلسة المطالبة السريعة -->
+  <div class="modal-backdrop sheet-mobile" id="quickSessionModal">
+    <div class="modal">
+      <div class="modal-header"><h3>⚡ جلسة المطالبة السريعة</h3><button type="button" class="close-btn" onclick="closeModal('quickSessionModal')">&times;</button></div>
+      <div class="modal-body" id="quickSessionBody"></div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button type="button" class="btn btn-secondary" onclick="prevSessionItem()">➡️ السابق</button>
+        <button type="button" class="btn btn-navy" onclick="nextSessionItem()">التالي ⬅️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة صندوق تحصيل اليوم -->
+  <div class="modal-backdrop sheet-mobile" id="todayBoxModal">
+    <div class="modal">
+      <div class="modal-header"><h3>💰 صندوق مقبوضات اليوم</h3><button type="button" class="close-btn" onclick="closeModal('todayBoxModal')">&times;</button></div>
+      <div class="modal-body" id="todayBoxBody"></div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('todayBoxModal')">إغلاق</button></div>
+    </div>
+  </div>
+
+  <!-- نافذة سجل الدفعات -->
+  <div class="modal-backdrop sheet-mobile" id="historyModal">
+    <div class="modal">
+      <div class="modal-header"><h3 id="historyTitle">سجل الدفعات</h3><button type="button" class="close-btn" onclick="closeModal('historyModal')">&times;</button></div>
+      <div class="modal-body" id="historyBody"></div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeModal('historyModal')">إغلاق</button></div>
+    </div>
+  </div>
+
+  <!-- نافذة استيراد إكسل -->
+  <div class="modal-backdrop" id="bulkModal">
+    <div class="modal">
+      <div class="modal-header"><h3>📥 استيراد من إكسل</h3><button type="button" class="close-btn" onclick="closeModal('bulkModal')">&times;</button></div>
+      <div class="modal-body">
+        <div class="info-box">انسخ الصفوف من إكسل بالترتيب:<br><strong>اسم الطالب | الصف | الهاتف | القسط الأساسي | المدفوع | السكن | ملاحظات</strong></div>
+        <textarea id="bulkText" class="textarea-control" rows="7" placeholder="أحمد محمد	التاسع	0912345678	375	150	طريق حلب	ذمة العام الماضي"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('bulkModal')">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="submitBulkImport()">استيراد الكل</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة الإعدادات وشام كاش والمنبّه (للإدارة فقط) -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal" style="max-width:660px;">
+      <div class="modal-header"><h3>⚙ الإعدادات، شام كاش، الصلاحيات، والمنبّه</h3><button type="button" class="close-btn" onclick="closeModal('settingsModal')">&times;</button></div>
+      <div class="modal-body">
+
+        <div class="settings-section" style="border-color:#99f6e4; background:#f0fdfa;">
+          <h4>1. الدفع الإلكتروني عبر شام كاش (Sham Cash)</h4>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="checkbox-row"><input type="checkbox" id="setShamEnabled"> تفعيل إظهار شام كاش في رسائل واتساب وكشف الحساب المصوّر</label>
+            </div>
+            <div class="form-group"><label>اسم حساب شام كاش</label><input type="text" id="setShamName" class="input-control" placeholder="مثال: حساب المحاسبة"></div>
+            <div class="form-group"><label>رمز / رقم حساب شام كاش</label><input type="text" id="setShamCode" class="input-control" dir="ltr" placeholder="أدخل رمز الحساب"></div>
+            <div class="form-group full">
+              <label>رابط صفحة الدفع (pay.html) على GitHub Pages (اختياري)</label>
+              <input type="url" id="setShamPayUrl" class="input-control" dir="ltr" placeholder="https://username.github.io/debts-archive/pay.html">
+            </div>
+            <div class="form-group full">
+              <label>صورة باركود شام كاش (تُدمج تلقائياً داخل كشف الحساب المصوّر)</label>
+              <input type="file" id="setShamQrFile" accept="image/*" class="input-control" onchange="handleQrUpload(event)">
+              <div id="qrPreviewContainer" style="display:none;" class="qr-preview-box">
+                <img id="qrPreviewImg" src="" alt="باركود شام كاش">
+                <div style="flex:1; font-size:12px;">
+                  <strong style="color:var(--teal);">✓ تم تجهيز صورة الباركود</strong>
+                  <div style="color:var(--muted); font-size:11px;">ستظهر تلقائياً أسفل كل كشف حساب مصوّر.</div>
+                  <button type="button" class="tag-btn" style="margin-top:6px; color:var(--danger);" onclick="clearShamQr()">حذف الصورة</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>2. قفل التطبيق ورموز PIN (4 أرقام لكل دور)</h4>
+          <div class="form-grid">
+            <div class="form-group full"><label class="checkbox-row"><input type="checkbox" id="setPinEnabled"> تفعيل شاشة الدخول برمز PIN عند فتح التطبيق</label></div>
+            <div class="form-group"><label>رمز الإدارة (4 أرقام)</label><input type="text" id="setAdminPin" maxlength="4" class="input-control" dir="ltr"></div>
+            <div class="form-group"><label>رمز المحاسبة (4 أرقام)</label><input type="text" id="setStaffPin" maxlength="4" class="input-control" dir="ltr"></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>3. العملة والنداء الدولي</h4>
+          <div class="form-grid">
+            <div class="form-group"><label>العملة</label><input type="text" id="setCurrency" class="input-control"></div>
+            <div class="form-group"><label>النداء الدولي (دون +)</label><input type="text" id="setCountryCode" class="input-control" dir="ltr"></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>4. منبّه تقويم جوجل + التقرير الصباحي (Gmail)</h4>
+          <div class="form-grid">
+            <div class="form-group"><label class="checkbox-row"><input type="checkbox" id="setCalEnabled"> مزامنة المواعيد مع تقويم جوجل</label></div>
+            <div class="form-group"><label>ساعة تنبيه التقويم</label><input type="number" id="setCalHour" class="input-control" min="6" max="22"></div>
+            <div class="form-group full"><label>البريد المستلم للتقرير الصباحي (افصل بفاصلة لأكثر من إيميل)</label><input type="text" id="setEmailRecipients" class="input-control" dir="ltr"></div>
+            <div class="form-group full"><button type="button" class="btn btn-secondary" style="width:100%;" onclick="testEmailReport()">📧 إرسال تقرير تجريبي الآن إلى بريدي</button></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>5. قوالب واتساب ({الاسم} {الصف} {الأساسي} {المدفوع} {المتبقي} {الموعد})</h4>
+          <div class="form-group"><label>1. مطابقة ودية</label><textarea id="setTplFriendly" class="textarea-control" rows="3"></textarea></div>
+          <div class="form-group"><label>2. تذكير بوعد السداد</label><textarea id="setTplReminder" class="textarea-control" rows="3"></textarea></div>
+          <div class="form-group"><label>3. مطالبة نهائية / تسوية</label><textarea id="setTplFinal" class="textarea-control" rows="3"></textarea></div>
+          <div class="form-group"><label>4. سند قبض ({رقم_السند} {التاريخ} {دفعة_اليوم} {المدفوع} {المتبقي})</label><textarea id="setTplReceipt" class="textarea-control" rows="3"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('settingsModal')">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="saveSettings()">حفظ كافة الإعدادات</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loader-overlay" id="loader">
+    <div class="spinner"></div>
+    <div style="font-weight:700; color:var(--navy);">جاري المعالجة...</div>
+  </div>
+  <div class="toast" id="toast"></div>
 
   <script>
-    // ضع رابط تطبيق الويب (Web App URL) المنسوخ من Google Apps Script هنا:
-    var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDrVNFw3fmw1yglIfTvuqHhSvdaADrpJkcfTRQahXxUJNg7iW3ch880Dw_NkdgqLwZ/exec";
+    var allStudents = [];
+    var appSettings = {};
+    var todayStr = '';
+    var todayTotal = 0;
+    var monthTotal = 0;
+    var todayPayments = [];
 
-    (function() {
-      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf("http") !== 0) {
-        document.getElementById("loaderBar").style.display = "none";
-        document.getElementById("setupNote").style.display = "block";
+    var currentUserRole = 'admin';
+    var currentUserLabel = 'الإدارة';
+    var pinBuffer = '';
+
+    var currentGradeFilter = 'ALL';
+    var currentStatusFilter = 'ALL';
+    var currentSortOrder = 'REM_DESC';
+
+    var currentPayStudent = null;
+    var lastReceiptData = null;
+    var currentWaStudent = null;
+    var currentFamilyList = [];
+    var sessionList = [];
+    var sessionIndex = 0;
+    var lastStatementDataUrl = '';
+    var lastStatementFilename = 'statement.png';
+    var lastClaimDataUrl = '';
+    var lastClaimFilename = 'claim-card.png';
+    var currentClaimStudent = null;
+
+    var pendingQrData = '';
+    var pendingQrChanged = false;
+
+    var GRADES_LIST = [
+      'الروضة', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس',
+      'السابع', 'الثامن', 'التاسع', 'العاشر', 'الحادي عشر', 'البكالوريا', 'متخرج / منسحب'
+    ];
+    var STATUS_OPTIONS = [
+      { id: 'ALL', label: 'الكل (النشط)' },
+      { id: 'DUE', label: '🔔 مستحق المتابعة' },
+      { id: 'REMAINING', label: '⏳ عليهم متبقي' },
+      { id: 'UNPAID', label: '❗ لم يسددوا شيئاً' },
+      { id: 'NEEDS_VERIFY', label: '🔍 يحتاج مطابقة / متنازع' },
+      { id: 'RECENT', label: '🕒 مسدد حديثاً (30 يوم)' },
+      { id: 'PAID_FULL', label: '✅ مسدد بالكامل' },
+      { id: 'FROZEN', label: '❄️ الديون المجمّدة' }
+    ];
+    var SORT_OPTIONS = [
+      { id: 'REM_DESC', label: 'الأعلى متبقياً أولاً' },
+      { id: 'PROMISE_ASC', label: 'أقرب موعد سداد' },
+      { id: 'CONTACT_OLD', label: 'الأقدم بلا مطالبة' },
+      { id: 'POSTPONE_DESC', label: 'الأكثر تأجيلاً' },
+      { id: 'NEWEST', label: 'الأحدث إضافة' }
+    ];
+
+    function getActor() { return { role: currentUserRole, roleLabel: currentUserLabel }; }
+    function toEnNum(val) {
+      return String(val || '')
+        .replace(/[٠-٩]/g, function(d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); })
+        .replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
+    }
+    function parseNum(val) { var n = parseFloat(toEnNum(val).replace(/[^\d.-]/g, '')); return isNaN(n) ? 0 : n; }
+    function escapeHtml(t) { return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function formatMoney(num) { return Number(num || 0).toLocaleString('en-US') + ' ' + (appSettings.currency || '$'); }
+
+    function normalizePhone(rawPhone) {
+      var p = toEnNum(rawPhone || '').replace(/[^\d]/g, '');
+      if (!p) return '';
+      if (p.indexOf('00') === 0) p = p.substring(2);
+      if (p.indexOf('09') === 0 && p.length === 10) return '963' + p.substring(1);
+      if (p.indexOf('9') === 0 && p.length === 9) return '963' + p;
+      if (p.indexOf('05') === 0 && p.length === 11) return '90' + p.substring(1);
+      if (p.indexOf('5') === 0 && p.length === 10) return '90' + p;
+      if (p.indexOf('0') === 0) return (appSettings.countryCode || '963') + p.substring(1);
+      return p;
+    }
+
+    function buildShamCashFooter(studentName, amountStr) {
+      if (appSettings.shamCashEnabled !== 'true') return '';
+      var code = String(appSettings.shamCashCode || '').trim();
+      var name = String(appSettings.shamCashName || '').trim();
+      var payUrl = String(appSettings.shamCashPayUrl || '').trim();
+      if (!code && !payUrl) return '';
+
+      var lines = ['\n💳 للدفع الإلكتروني عبر شام كاش (Sham Cash):'];
+      if (name) lines.push('• اسم الحساب: ' + name);
+      if (code) lines.push('• رمز الحساب (للنسخ):\n`' + code + '`');
+      if (payUrl) {
+        var sep = payUrl.indexOf('?') === -1 ? '?' : '&';
+        var fullLink = payUrl + sep + 'n=' + encodeURIComponent(studentName || '') +
+          '&a=' + encodeURIComponent(amountStr || '') +
+          (code ? '&c=' + encodeURIComponent(code) : '') +
+          (name ? '&an=' + encodeURIComponent(name) : '');
+        lines.push('• رابط الباركود والنسخ السريع:\n' + fullLink);
+      }
+      return '\n' + lines.join('\n');
+    }
+
+    function showLoader(s) { document.getElementById('loader').classList.toggle('show', s); }
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(function() { t.classList.remove('show'); }, 3200);
+    }
+
+    /* ---- شاشة الدخول برمز PIN (مع دعم لوحة مفاتيح الكمبيوتر) ---- */
+    window.addEventListener('load', function() {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        alert('يرجى فتح التطبيق عبر رابط النشر في Google Apps Script أو GitHub Pages.');
         return;
       }
-      var frame = document.getElementById("appFrame");
-      frame.onload = function() {
-        document.getElementById("splash").classList.add("hide");
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) {
+          showLoader(false);
+          if (res && res.pinEnabled) {
+            pinBuffer = ''; updatePinDots();
+            document.getElementById('pinOverlay').classList.add('show');
+          } else {
+            applyRole(res.role || 'admin', res.roleLabel || 'الإدارة');
+            hydrateData(res.data);
+          }
+        })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .checkStartupAuth();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (!document.getElementById('pinOverlay').classList.contains('show')) return;
+      if (e.key >= '0' && e.key <= '9') enterPinDigit(e.key);
+      else if (e.key === 'Backspace') backspacePin();
+      else if (e.key === 'Enter') submitPinLogin();
+    });
+
+    function enterPinDigit(d) {
+      if (pinBuffer.length >= 4) return;
+      pinBuffer += d;
+      document.getElementById('pinError').textContent = '';
+      updatePinDots();
+      if (pinBuffer.length === 4) submitPinLogin();
+    }
+    function backspacePin() { pinBuffer = pinBuffer.slice(0, -1); updatePinDots(); }
+    function updatePinDots() {
+      var html = '';
+      for (var i = 0; i < 4; i++) {
+        html += '<span class="pin-dot ' + (i < pinBuffer.length ? 'filled' : '') + '"></span>';
+      }
+      document.getElementById('pinDots').innerHTML = html;
+    }
+    function submitPinLogin() {
+      if (!pinBuffer) return;
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) {
+          showLoader(false);
+          if (res && res.ok) {
+            document.getElementById('pinOverlay').classList.remove('show');
+            applyRole(res.role, res.roleLabel);
+            hydrateData(res.data);
+            showToast('أهلاً بك — الصلاحية: ' + res.roleLabel);
+          } else {
+            pinBuffer = ''; updatePinDots();
+            document.getElementById('pinError').textContent = (res && res.message) || 'الرمز غير صحيح';
+          }
+        })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .verifyPinAndLoad(pinBuffer);
+    }
+    function applyRole(role, label) {
+      currentUserRole = role;
+      currentUserLabel = label;
+      document.getElementById('headerRoleBadge').textContent = label;
+      document.body.classList.toggle('role-staff', role !== 'admin');
+    }
+    function logoutUser() {
+      pinBuffer = ''; updatePinDots();
+      document.getElementById('pinError').textContent = '';
+      document.getElementById('pinOverlay').classList.add('show');
+    }
+
+    /* ---- التنقل واللائحة الجانبية ---- */
+    function openDrawer() {
+      document.getElementById('sideDrawer').classList.add('open');
+      document.getElementById('drawerBackdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer() {
+      document.getElementById('sideDrawer').classList.remove('open');
+      document.getElementById('drawerBackdrop').classList.remove('open');
+      syncBodyScroll();
+    }
+    function openModal(id) { document.getElementById(id).classList.add('show'); document.body.style.overflow = 'hidden'; }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('show');
+      syncBodyScroll();
+      syncBottomNavState();
+    }
+    function backdropClose(e, id) { if (e.target && e.target.id === id) closeModal(id); }
+    function syncBodyScroll() {
+      var anyOpen = document.querySelector('.modal-backdrop.show') || document.getElementById('sideDrawer').classList.contains('open');
+      document.body.style.overflow = anyOpen ? 'hidden' : '';
+    }
+    function syncBottomNavState() {
+      ['bnavAll', 'bnavDue', 'bnavSession', 'bnavBox'].forEach(function(id) {
+        document.getElementById(id).classList.remove('active');
+      });
+      if (currentStatusFilter === 'DUE') document.getElementById('bnavDue').classList.add('active');
+      else document.getElementById('bnavAll').classList.add('active');
+    }
+
+    function toggleMobileStats() {
+      var exp = document.getElementById('mStatsExpanded');
+      var open = exp.classList.toggle('open');
+      document.getElementById('mStatsToggleBtn').textContent = open ? 'إخفاء ▴' : 'التفاصيل ▾';
+    }
+
+    function switchBottomTab(tab) {
+      ['bnavAll', 'bnavDue', 'bnavSession', 'bnavBox'].forEach(function(id) {
+        document.getElementById(id).classList.remove('active');
+      });
+      if (tab === 'all') { document.getElementById('bnavAll').classList.add('active'); selectStatus('ALL'); }
+      else if (tab === 'due') { document.getElementById('bnavDue').classList.add('active'); selectStatus('DUE'); }
+      else if (tab === 'session') { document.getElementById('bnavSession').classList.add('active'); openQuickSession(false); }
+      else if (tab === 'box') { document.getElementById('bnavBox').classList.add('active'); openTodayBoxModal(); }
+    }
+
+    function loadData() {
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) { hydrateData(res); showLoader(false); })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .getInitialData(currentUserRole);
+    }
+
+    function hydrateData(res) {
+      if (!res) return;
+      allStudents = res.students || [];
+      appSettings = res.settings || appSettings;
+      todayStr = res.todayStr || new Date().toISOString().split('T')[0];
+      todayTotal = res.todayTotal || 0;
+      monthTotal = res.monthTotal || 0;
+      todayPayments = res.todayPayments || [];
+
+      document.getElementById('statTodayBox').textContent = formatMoney(todayTotal);
+      document.getElementById('statMonthBox').textContent = 'الشهر: ' + formatMoney(monthTotal);
+      document.getElementById('mStatToday').textContent = formatMoney(todayTotal);
+      document.getElementById('mStatMonth').textContent = formatMoney(monthTotal);
+
+      updateAlertsAndCounters();
+      applyFilters();
+    }
+
+    function isPaidRecently(dateStr) {
+      if (!dateStr) return false;
+      var d = new Date(dateStr);
+      if (isNaN(d.getTime())) return false;
+      var diff = (new Date() - d) / (1000 * 60 * 60 * 24);
+      return diff >= -1 && diff <= 30;
+    }
+
+    function getStatusCounts() {
+      var c = { ALL: 0, DUE: 0, REMAINING: 0, UNPAID: 0, NEEDS_VERIFY: 0, RECENT: 0, PAID_FULL: 0, FROZEN: 0, overdue: 0, dueToday: 0 };
+      allStudents.forEach(function(st) {
+        if (st.isFrozen) { c.FROZEN++; return; }
+        c.ALL++;
+        if (st.remaining > 0) {
+          c.REMAINING++;
+          if (st.paid === 0) c.UNPAID++;
+          if (st.nextPromiseDate) {
+            if (st.nextPromiseDate < todayStr) { c.DUE++; c.overdue++; }
+            else if (st.nextPromiseDate === todayStr) { c.DUE++; c.dueToday++; }
+          }
+        } else { c.PAID_FULL++; }
+        if (st.verificationStatus !== 'مؤكد') c.NEEDS_VERIFY++;
+        if (st.paid > 0 && isPaidRecently(st.lastPaymentDate)) c.RECENT++;
+      });
+      return c;
+    }
+
+    function updateAlertsAndCounters() {
+      var c = getStatusCounts();
+      document.getElementById('dCountALL').textContent = c.ALL;
+      document.getElementById('dCountDUE').textContent = c.DUE;
+      document.getElementById('dCountREMAINING').textContent = c.REMAINING;
+      document.getElementById('dCountUNPAID').textContent = c.UNPAID;
+      document.getElementById('dCountVERIFY').textContent = c.NEEDS_VERIFY;
+      document.getElementById('dCountRECENT').textContent = c.RECENT;
+      document.getElementById('dCountPAID').textContent = c.PAID_FULL;
+      document.getElementById('dCountFROZEN').textContent = c.FROZEN;
+
+      var dot = document.getElementById('bnavDueDot');
+      dot.textContent = c.DUE;
+      dot.classList.toggle('show', c.DUE > 0);
+
+      var banner = document.getElementById('dueAlertBanner');
+      if (c.DUE > 0) {
+        document.getElementById('dueAlertText').textContent = '🔔 مواعيد السداد: ' + c.dueToday + ' اليوم و ' + c.overdue + ' متأخر';
+        banner.classList.add('show');
+      } else {
+        banner.classList.remove('show');
+      }
+    }
+
+    /* ---- ملخص الصفوف ---- */
+    function openGradeSummaryModal() {
+      var map = {};
+      allStudents.forEach(function(st) {
+        if (st.isFrozen) return;
+        if (!map[st.grade]) map[st.grade] = { grade: st.grade, count: 0, total: 0, paid: 0, discount: 0, remaining: 0 };
+        map[st.grade].count++;
+        map[st.grade].total += st.total;
+        map[st.grade].paid += st.paid;
+        map[st.grade].discount += st.discount;
+        map[st.grade].remaining += st.remaining;
+      });
+      var list = Object.keys(map).map(function(k) { return map[k]; });
+      list.sort(function(a, b) { return b.remaining - a.remaining; });
+
+      var body = document.getElementById('gradeSummaryBody');
+      if (!list.length) {
+        body.innerHTML = '<div class="empty-state">لا توجد بيانات صفوف حالياً.</div>';
+      } else {
+        body.innerHTML = '<div class="info-box">مرتّبة من الصف الأعلى مديونية إلى الأقل. اضغط على أي صف لعرض طلابه:</div>' +
+          list.map(function(g) {
+            var pct = g.total > 0 ? Math.min(100, Math.round(((g.paid + g.discount) / g.total) * 100)) : 100;
+            return '<div class="grade-row-card" onclick="selectGradeFromSummary(\'' + escapeHtml(g.grade).replace(/'/g, "\\'") + '\')">' +
+              '<div class="grade-row-top"><div><strong style="color:var(--navy); font-size:14px;">الصف: ' + escapeHtml(g.grade) + '</strong> <span class="badge badge-grade">' + g.count + ' طالب</span></div><strong style="color:var(--danger); font-size:15px;">' + formatMoney(g.remaining) + '</strong></div>' +
+              '<div class="prog-labels"><span>مسدد: ' + formatMoney(g.paid) + ' (' + pct + '%)</span><span>الأساسي: ' + formatMoney(g.total) + '</span></div>' +
+              '<div class="prog-track"><div class="prog-fill" style="width:' + pct + '%;"></div></div>' +
+            '</div>';
+          }).join('');
+      }
+      openModal('gradeSummaryModal');
+    }
+
+    function selectGradeFromSummary(grade) {
+      closeModal('gradeSummaryModal');
+      selectGrade(grade);
+      showToast('تم عرض طلاب صف: ' + grade);
+    }
+
+    /* ---- المنسدلات السفلية ---- */
+    function openPicker(type) {
+      var titleEl = document.getElementById('pickerModalTitle');
+      var bodyEl = document.getElementById('pickerListBody');
+      var html = '';
+
+      if (type === 'grade') {
+        titleEl.textContent = 'تصفية حسب الصف';
+        var gradeCounts = {};
+        allStudents.forEach(function(st) { if (!st.isFrozen) gradeCounts[st.grade] = (gradeCounts[st.grade] || 0) + 1; });
+        html += '<button type="button" class="picker-option ' + (currentGradeFilter === 'ALL' ? 'selected' : '') + '" onclick="selectGrade(\'ALL\')"><span>جميع الصفوف</span><span class="picker-count">' + allStudents.filter(function(x){return !x.isFrozen;}).length + '</span></button>';
+        GRADES_LIST.forEach(function(g) {
+          html += '<button type="button" class="picker-option ' + (currentGradeFilter === g ? 'selected' : '') + '" onclick="selectGrade(\'' + g + '\')"><span>' + g + '</span><span class="picker-count">' + (gradeCounts[g] || 0) + '</span></button>';
+        });
+      } else if (type === 'status') {
+        titleEl.textContent = 'تصفية حسب الحالة';
+        var counts = getStatusCounts();
+        STATUS_OPTIONS.forEach(function(opt) {
+          html += '<button type="button" class="picker-option ' + (currentStatusFilter === opt.id ? 'selected' : '') + '" onclick="selectStatus(\'' + opt.id + '\')"><span>' + opt.label + '</span><span class="picker-count">' + (counts[opt.id] || 0) + '</span></button>';
+        });
+      } else if (type === 'sort') {
+        titleEl.textContent = 'ترتيب قائمة الطلاب';
+        SORT_OPTIONS.forEach(function(opt) {
+          html += '<button type="button" class="picker-option ' + (currentSortOrder === opt.id ? 'selected' : '') + '" onclick="selectSort(\'' + opt.id + '\')"><span>' + opt.label + '</span>' + (currentSortOrder === opt.id ? '<span>✓</span>' : '') + '</button>';
+        });
+      }
+      bodyEl.innerHTML = html;
+      openModal('pickerModal');
+    }
+
+    function selectGrade(g) {
+      currentGradeFilter = g;
+      document.getElementById('lblGrade').textContent = (g === 'ALL') ? 'جميع الصفوف' : g;
+      document.getElementById('btnPickGrade').classList.toggle('active', g !== 'ALL');
+      closeModal('pickerModal');
+      applyFilters();
+    }
+    function selectStatus(stId) {
+      currentStatusFilter = stId;
+      var found = STATUS_OPTIONS.find(function(o) { return o.id === stId; });
+      document.getElementById('lblStatus').textContent = found ? found.label.replace(/^[^\u0600-\u06FF]+\s*/, '') : 'الكل';
+      document.getElementById('btnPickStatus').classList.toggle('active', stId !== 'ALL');
+      document.querySelectorAll('.drawer-item[data-dstatus]').forEach(function(el) {
+        el.classList.toggle('active-filter', el.getAttribute('data-dstatus') === stId);
+      });
+      closeModal('pickerModal');
+      applyFilters();
+      syncBottomNavState();
+    }
+    function selectSort(sId) {
+      currentSortOrder = sId;
+      var found = SORT_OPTIONS.find(function(o) { return o.id === sId; });
+      document.getElementById('lblSort').textContent = found ? found.label : 'الأعلى متبقياً';
+      closeModal('pickerModal');
+      applyFilters();
+    }
+    function onSearchInput() {
+      document.getElementById('searchClearBtn').style.display = document.getElementById('searchInput').value ? 'block' : 'none';
+      applyFilters();
+    }
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('searchClearBtn').style.display = 'none';
+      applyFilters();
+    }
+
+    function getFamilyMap() {
+      var map = {};
+      allStudents.forEach(function(st) {
+        if (st.isFrozen || st.remaining <= 0) return;
+        var p = normalizePhone(st.phone);
+        if (!p) return;
+        if (!map[p]) map[p] = [];
+        map[p].push(st);
+      });
+      return map;
+    }
+
+    function applyFilters() {
+      var q = document.getElementById('searchInput').value.trim().toLowerCase();
+      var filtered = allStudents.filter(function(st) {
+        if (currentStatusFilter === 'FROZEN') { if (!st.isFrozen) return false; }
+        else { if (st.isFrozen && !q) return false; }
+        if (currentGradeFilter !== 'ALL' && st.grade !== currentGradeFilter) return false;
+        if (currentStatusFilter === 'DUE' && !(st.remaining > 0 && st.nextPromiseDate && st.nextPromiseDate <= todayStr)) return false;
+        if (currentStatusFilter === 'REMAINING' && st.remaining <= 0) return false;
+        if (currentStatusFilter === 'UNPAID' && !(st.paid === 0 && st.remaining > 0)) return false;
+        if (currentStatusFilter === 'NEEDS_VERIFY' && st.verificationStatus === 'مؤكد') return false;
+        if (currentStatusFilter === 'PAID_FULL' && st.remaining > 0) return false;
+        if (currentStatusFilter === 'RECENT' && !(st.paid > 0 && isPaidRecently(st.lastPaymentDate))) return false;
+        if (q) {
+          var hay = (st.name + ' ' + st.phone + ' ' + st.address + ' ' + st.notes + ' ' + st.grade).toLowerCase();
+          if (hay.indexOf(q) === -1) return false;
+        }
+        return true;
+      });
+
+      filtered.sort(function(a, b) {
+        if (currentSortOrder === 'REM_DESC') return b.remaining - a.remaining;
+        if (currentSortOrder === 'PROMISE_ASC') return (a.nextPromiseDate || '9999-99-99').localeCompare(b.nextPromiseDate || '9999-99-99');
+        if (currentSortOrder === 'CONTACT_OLD') return (a.lastContactDate || '0000-00-00').localeCompare(b.lastContactDate || '0000-00-00');
+        if (currentSortOrder === 'POSTPONE_DESC') return b.postponeCount - a.postponeCount;
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
+
+      var sumTotal = 0, sumPaid = 0, sumDiscount = 0, sumRem = 0, zeroCount = 0;
+      filtered.forEach(function(st) {
+        sumTotal += st.total; sumPaid += st.paid; sumDiscount += st.discount; sumRem += st.remaining;
+        if (st.paid === 0 && st.remaining > 0) zeroCount++;
+      });
+
+      var pct = sumTotal > 0 ? Math.round(((sumPaid + sumDiscount) / sumTotal) * 100) : 0;
+      document.getElementById('statTotal').textContent = formatMoney(sumTotal);
+      document.getElementById('statPaid').textContent = formatMoney(sumPaid);
+      document.getElementById('statRemaining').textContent = formatMoney(sumRem);
+      document.getElementById('statCount').textContent = filtered.length + ' طالب';
+      document.getElementById('statPercent').textContent = pct + '% تسوية';
+      document.getElementById('statZeroPaid').textContent = zeroCount + ' لم يدفعوا شيئاً';
+
+      document.getElementById('mStatRem').textContent = formatMoney(sumRem);
+      document.getElementById('mStatTotal').textContent = formatMoney(sumTotal);
+      document.getElementById('mStatPaid').textContent = formatMoney(sumPaid) + ' (' + pct + '%)';
+      document.getElementById('mStatCounts').textContent = filtered.length + ' طالب / ' + zeroCount + ' لم يدفع';
+
+      renderViews(filtered);
+    }
+
+    function getVerifyBadge(status) {
+      if (status === 'يحتاج مطابقة') return '<span class="badge badge-verify-warn">يحتاج مطابقة</span>';
+      if (status === 'متنازع عليه') return '<span class="badge badge-verify-dispute">متنازع عليه</span>';
+      return '<span class="badge badge-verify-ok">مؤكد</span>';
+    }
+
+    function renderViews(list) {
+      var tbody = document.getElementById('studentsTableBody');
+      var mContainer = document.getElementById('mobileCardsContainer');
+      var familyMap = getFamilyMap();
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد سجلات مطابقة.</td></tr>';
+        mContainer.innerHTML = '<div class="m-card empty-state">لا توجد سجلات مطابقة للبحث أو الفلتر الحالي.</div>';
+        return;
+      }
+
+      var tableRows = [];
+      var mobileCards = [];
+
+      list.forEach(function(st) {
+        var safeId = escapeHtml(st.id).replace(/'/g, "\\'");
+        var cleanPhone = normalizePhone(st.phone);
+        var siblings = cleanPhone && familyMap[cleanPhone] ? familyMap[cleanPhone] : [];
+        var hasFamily = siblings.length > 1;
+        var isOverdue = st.remaining > 0 && st.nextPromiseDate && st.nextPromiseDate <= todayStr;
+        var pct = st.total > 0 ? Math.min(100, Math.round(((st.paid + st.discount) / st.total) * 100)) : 100;
+
+        var familyBadge = hasFamily ? '<span class="badge badge-family" onclick="event.stopPropagation(); openFamilyModal(\'' + cleanPhone + '\')">👨‍👩‍👧‍👦 عائلة (' + siblings.length + ')</span>' : '';
+        var frozenBadge = st.isFrozen ? '<span class="badge badge-frozen">❄️ مجمّد</span>' : '';
+        var postponeBadge = st.postponeCount > 0 ? '<span class="badge badge-postpone">تأجيل ×' + st.postponeCount + '</span>' : '';
+        var dueBadge = isOverdue ? '<span class="badge badge-due">📅 مستحق ' + st.nextPromiseDate + '</span>' : (st.nextPromiseDate ? '<span class="badge" style="background:#f1f5f9;color:var(--navy);">📅 ' + st.nextPromiseDate + '</span>' : '');
+        var contactInfo = st.lastContactDate ? ('آخر مطالبة: ' + st.lastContactDate + ' (×' + st.contactCount + ')') : 'لم يُطالب بعد';
+        var callHref = cleanPhone ? ('tel:+' + cleanPhone) : '';
+
+        tableRows.push(
+          '<tr>' +
+            '<td><div class="student-name" onclick="openDetailsModal(\'' + safeId + '\')">' + escapeHtml(st.name) + '</div>' +
+            '<div class="badges-row"><span class="badge badge-grade">' + escapeHtml(st.grade) + '</span>' + getVerifyBadge(st.verificationStatus) + familyBadge + frozenBadge + '</div></td>' +
+            '<td><div dir="ltr" style="text-align:right; font-weight:700;">' + escapeHtml(st.phone || '—') + '</div><div class="student-sub" style="color:var(--teal); font-weight:700;">' + contactInfo + '</div></td>' +
+            '<td><div class="prog-labels"><span>' + formatMoney(st.paid) + ' / ' + formatMoney(st.total) + '</span><span>' + pct + '%</span></div><div class="prog-track"><div class="prog-fill" style="width:' + pct + '%;"></div></div></td>' +
+            '<td><div class="' + (st.remaining > 0 ? 'money-rem' : 'money-ok') + '">' + formatMoney(st.remaining) + '</div></td>' +
+            '<td>' + dueBadge + '<div class="badges-row">' + postponeBadge + '</div></td>' +
+            '<td><div class="actions-cell">' +
+              (st.remaining > 0 ? '<button type="button" class="btn btn-primary" style="padding:6px 9px;font-size:12px;" onclick="openPaymentModal(\'' + safeId + '\')">+ دفعة</button>' : '<span class="badge badge-paid">خالص</span>') +
+              '<button type="button" class="btn btn-wa" style="padding:6px 9px;font-size:12px;" onclick="openWaModal(\'' + safeId + '\')">واتساب</button>' +
+              '<button type="button" class="btn btn-gold" style="padding:6px 8px;font-size:12px;" onclick="openClaimCardModal(\'' + safeId + '\')" title="بطاقة مطالبة مصوّرة بالباركود">🖼 بطاقة</button>' +
+              '<button type="button" class="btn btn-icon" onclick="openStatementModal(\'' + safeId + '\')" title="كشف حساب مصوّر">🧾</button>' +
+              '<button type="button" class="btn btn-icon" onclick="openDetailsModal(\'' + safeId + '\')" title="التفاصيل">📋</button>' +
+            '</div></td>' +
+          '</tr>'
+        );
+
+        var cardClass = isOverdue ? 'overdue' : (st.remaining <= 0 ? 'settled' : '');
+        mobileCards.push(
+          '<div class="m-card ' + cardClass + '">' +
+            '<div class="m-card-top" onclick="openDetailsModal(\'' + safeId + '\')">' +
+              '<div style="min-width:0;"><div class="student-name">' + escapeHtml(st.name) + '</div>' +
+              '<div class="badges-row"><span class="badge badge-grade">' + escapeHtml(st.grade) + '</span>' + getVerifyBadge(st.verificationStatus) + dueBadge + familyBadge + frozenBadge + '</div></div>' +
+              '<div class="m-card-left"><span class="m-rem-label">' + (st.remaining > 0 ? 'المتبقي' : 'الحالة') + '</span>' +
+              '<div class="m-rem-val ' + (st.remaining > 0 ? 'money-rem' : 'money-ok') + '">' + (st.remaining > 0 ? formatMoney(st.remaining) : 'خالص') + '</div></div>' +
+            '</div>' +
+            '<div class="prog-wrap" onclick="openDetailsModal(\'' + safeId + '\')">' +
+              '<div class="prog-labels"><span>مسدد: ' + formatMoney(st.paid) + ' من ' + formatMoney(st.total) + '</span><span>' + pct + '%</span></div>' +
+              '<div class="prog-track"><div class="prog-fill" style="width:' + pct + '%;"></div></div>' +
+            '</div>' +
+            '<div class="m-card-meta" onclick="openDetailsModal(\'' + safeId + '\')"><span>' + contactInfo + '</span><span style="color:var(--teal); font-weight:800;">التفاصيل ◂</span></div>' +
+            '<div class="m-card-bar">' +
+              '<button type="button" class="btn btn-wa" onclick="openWaModal(\'' + safeId + '\')">💬 واتساب</button>' +
+              '<button type="button" class="btn btn-gold" onclick="openClaimCardModal(\'' + safeId + '\')">🖼 بطاقة</button>' +
+              (st.remaining > 0 ? '<button type="button" class="btn btn-primary" onclick="openPaymentModal(\'' + safeId + '\')">💵 دفعة</button>' : '<button type="button" class="btn btn-secondary" onclick="openStatementModal(\'' + safeId + '\')">🧾 كشف</button>') +
+              (callHref ? '<a class="btn btn-call" href="' + callHref + '" target="_top">📞 اتصال</a>' : '<button type="button" class="btn btn-secondary" onclick="openDetailsModal(\'' + safeId + '\')">📋 تفاصيل</button>') +
+            '</div>' +
+          '</div>'
+        );
+      });
+
+      tbody.innerHTML = tableRows.join('');
+      mContainer.innerHTML = mobileCards.join('');
+    }
+
+    /* ---- تفاصيل الطالب + أزرار التواصل السريعة ---- */
+    function openDetailsModal(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st) return;
+      var safeId = escapeHtml(st.id).replace(/'/g, "\\'");
+      var cleanPhone = normalizePhone(st.phone);
+      var familyMap = getFamilyMap();
+      var siblings = cleanPhone && familyMap[cleanPhone] ? familyMap[cleanPhone] : [];
+      var hasFamily = siblings.length > 1;
+      var callHref = cleanPhone ? ('tel:+' + cleanPhone) : '';
+
+      document.getElementById('detailsModalTitle').textContent = st.name;
+
+      var adminBtns = currentUserRole === 'admin'
+        ? '<button type="button" class="btn btn-secondary" onclick="closeModal(\'detailsModal\'); toggleFreeze(\'' + safeId + '\',' + (!st.isFrozen) + ')">❄️ ' + (st.isFrozen ? 'تنشيط' : 'تجميد') + '</button>' +
+          '<button type="button" class="btn btn-danger-soft" onclick="closeModal(\'detailsModal\'); confirmDelete(\'' + safeId + '\')">🗑 حذف السجل</button>'
+        : '';
+
+      document.getElementById('detailsModalBody').innerHTML =
+        '<div class="badges-row" style="margin-bottom:10px;">' +
+          '<span class="badge badge-grade">الصف: ' + escapeHtml(st.grade) + '</span>' +
+          getVerifyBadge(st.verificationStatus) +
+          (st.postponeCount > 0 ? '<span class="badge badge-postpone">تأجيل ×' + st.postponeCount + '</span>' : '') +
+          (hasFamily ? '<span class="badge badge-family" onclick="closeModal(\'detailsModal\'); openFamilyModal(\'' + cleanPhone + '\')">👨‍👩‍👧‍👦 الأشقاء (' + siblings.length + ')</span>' : '') +
+        '</div>' +
+
+        '<div class="detail-money-grid">' +
+          '<div class="detail-money-box"><span>القسط الأساسي</span><strong>' + formatMoney(st.total) + '</strong></div>' +
+          '<div class="detail-money-box"><span>المبلغ المدفوع</span><strong style="color:var(--teal);">' + formatMoney(st.paid) + '</strong></div>' +
+          '<div class="detail-money-box"><span>خصم التسوية</span><strong>' + formatMoney(st.discount) + '</strong></div>' +
+          '<div class="detail-money-box ' + (st.remaining > 0 ? 'rem' : '') + '"><span>صافي المتبقي</span><strong>' + formatMoney(st.remaining) + '</strong></div>' +
+        '</div>' +
+
+        '<div class="quick-outcome-box">' +
+          '<div class="quick-outcome-title">توثيق سريع لنتيجة التواصل (بدون كتابة):</div>' +
+          '<div class="quick-outcome-grid">' +
+            '<button type="button" class="outcome-btn" onclick="submitQuickOutcome(\'' + safeId + '\', \'لم يرد على الاتصال\')">📵 لم يرد</button>' +
+            '<button type="button" class="outcome-btn" onclick="submitQuickOutcome(\'' + safeId + '\', \'الهاتف مغلق / خارج التغطية\')">📴 الهاتف مغلق</button>' +
+            '<button type="button" class="outcome-btn" onclick="submitQuickOutcome(\'' + safeId + '\', \'طلب مطابقة الإيصالات\')">🧾 طلب مطابقة</button>' +
+            '<button type="button" class="outcome-btn" onclick="closeModal(\'detailsModal\'); openPromiseModal(\'' + safeId + '\')">🤝 وعد بالدفع (تحديد موعد)</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="detail-info-list">' +
+          '<div class="detail-row"><span>الهاتف</span><strong dir="ltr">' + escapeHtml(st.phone || 'غير مسجل') + '</strong></div>' +
+          '<div class="detail-row"><span>السكن</span><strong>' + escapeHtml(st.address || 'غير محدد') + '</strong></div>' +
+          '<div class="detail-row"><span>موعد السداد</span><strong style="color:' + (st.nextPromiseDate && st.nextPromiseDate <= todayStr ? 'var(--danger)' : 'var(--navy)') + ';">' + escapeHtml(st.nextPromiseDate || 'غير محدد') + '</strong></div>' +
+          '<div class="detail-row"><span>آخر مطالبة</span><strong>' + (st.lastContactDate ? (st.lastContactDate + ' (×' + st.contactCount + ')') : 'لم تتم بعد') + '</strong></div>' +
+          (st.notes ? '<div class="detail-row" style="flex-direction:column; align-items:flex-start;"><span>الملاحظات وسجل التواصل</span><strong style="text-align:right; font-weight:600; font-size:11px; line-height:1.6;">' + escapeHtml(st.notes) + '</strong></div>' : '') +
+        '</div>' +
+
+        '<div class="detail-actions-grid">' +
+          '<button type="button" class="btn btn-wa" onclick="closeModal(\'detailsModal\'); openWaModal(\'' + safeId + '\')">💬 مراسلة واتساب</button>' +
+          '<button type="button" class="btn btn-gold" onclick="closeModal(\'detailsModal\'); openClaimCardModal(\'' + safeId + '\')">🖼 بطاقة مطالبة بالباركود</button>' +
+          '<button type="button" class="btn btn-navy" onclick="closeModal(\'detailsModal\'); openStatementModal(\'' + safeId + '\')">🧾 كشف حساب كامل</button>' +
+          (callHref ? '<a class="btn btn-call" href="' + callHref + '" target="_top">📞 اتصال هاتفي</a>' : '<button type="button" class="btn btn-secondary" disabled>بلا رقم</button>') +
+          (st.remaining > 0 ? '<button type="button" class="btn btn-primary" onclick="closeModal(\'detailsModal\'); openPaymentModal(\'' + safeId + '\')">💵 تسجيل دفعة</button>' : '<button type="button" class="btn btn-secondary" disabled>خالص</button>') +
+          '<button type="button" class="btn btn-secondary" onclick="closeModal(\'detailsModal\'); openHistoryModal(\'' + safeId + '\')">📜 سجل الدفعات</button>' +
+          '<button type="button" class="btn btn-secondary" onclick="closeModal(\'detailsModal\'); openStudentModal(\'' + safeId + '\')">✏️ تعديل البيانات</button>' +
+          adminBtns +
+        '</div>';
+
+      openModal('detailsModal');
+    }
+
+    function submitQuickOutcome(studentId, outcomeText) {
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hydrateData(res.data); showLoader(false); showToast('تم توثيق: ' + outcomeText);
+          if (document.getElementById('detailsModal').classList.contains('show')) openDetailsModal(studentId);
+          if (document.getElementById('quickSessionModal').classList.contains('show')) renderQuickSessionCard();
+        })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .logQuickOutcome(studentId, outcomeText, getActor());
+    }
+
+    /* ---- مولّد كشف الحساب المصوّر (شامل باركود شام كاش) ---- */
+    function openStatementModal(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st) return;
+      document.getElementById('statementPreviewWrap').innerHTML = 'جاري رسم بطاقة كشف الحساب...';
+      openModal('statementModal');
+
+      google.script.run
+        .withSuccessHandler(function(payments) {
+          prepareAndDrawStatement(st, payments || []);
+        })
+        .withFailureHandler(function() { prepareAndDrawStatement(st, []); })
+        .getStudentPayments(studentId);
+    }
+
+    function prepareAndDrawStatement(st, payments) {
+      var showSham = (appSettings.shamCashEnabled === 'true') && (st.remaining > 0) &&
+        Boolean(appSettings.shamCashCode || appSettings.shamCashQrData || appSettings.shamCashPayUrl);
+
+      var runDraw = function(qrImg) {
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(function() { drawStatementCanvas(st, payments, showSham, qrImg); });
+        } else {
+          drawStatementCanvas(st, payments, showSham, qrImg);
+        }
       };
-      frame.src = APPS_SCRIPT_URL;
-      setTimeout(function() {
-        document.getElementById("splash").classList.add("hide");
-      }, 6000);
-    })();
+
+      if (showSham && appSettings.shamCashQrData) {
+        var img1 = new Image();
+        img1.onload = function() { runDraw(img1); };
+        img1.onerror = function() { runDraw(null); };
+        img1.src = appSettings.shamCashQrData;
+      } else if (showSham && appSettings.shamCashPayUrl) {
+        // محاولة احتياطية لتحميل shamcash-qr.png من نفس مجلد GitHub Pages
+        var qrFallbackUrl = appSettings.shamCashPayUrl.replace(/pay\.html.*$/i, 'shamcash-qr.png');
+        var img2 = new Image();
+        img2.crossOrigin = 'anonymous';
+        img2.onload = function() { runDraw(img2); };
+        img2.onerror = function() { runDraw(null); };
+        img2.src = qrFallbackUrl;
+      } else {
+        runDraw(null);
+      }
+    }
+
+    function drawStatementCanvas(st, payments, showSham, qrImg) {
+      var canvas = document.getElementById('statementCanvas');
+      var list = payments.slice(0, 6);
+      var W = 900;
+      var shamHeight = showSham ? 215 : 0;
+      var tableHeight = list.length > 0 ? (60 + list.length * 46) : 55;
+      var H = 490 + tableHeight + shamHeight + 70;
+
+      canvas.width = W;
+      canvas.height = H;
+      var ctx = canvas.getContext('2d');
+      ctx.direction = 'rtl';
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      // الرأس الكحلي + الذهبي
+      ctx.fillStyle = '#0f2942';
+      ctx.fillRect(0, 0, W, 118);
+      ctx.fillStyle = '#c5a028';
+      ctx.fillRect(0, 118, W, 7);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 32px Cairo, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('أرشيف الذمم — كشف حساب مالي', W - 40, 62);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '600 18px Cairo, sans-serif';
+      ctx.fillText('تاريخ الإصدار: ' + todayStr, W - 40, 98);
+
+      // بطاقة بيانات الطالب
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      ctx.fillRect(36, 146, W - 72, 108);
+      ctx.strokeRect(36, 146, W - 72, 108);
+
+      ctx.fillStyle = '#0f2942';
+      ctx.font = '800 26px Cairo, sans-serif';
+      ctx.fillText('الطالب/ة: ' + st.name, W - 56, 190);
+      ctx.fillStyle = '#475569';
+      ctx.font = '700 20px Cairo, sans-serif';
+      ctx.fillText('الصف: ' + st.grade + '    |    التوثيق: ' + (st.verificationStatus || 'مؤكد'), W - 56, 232);
+
+      // البطاقات المالية الـ 4
+      var boxes = [
+        { label: 'القسط الأساسي', val: formatMoney(st.total), bg: '#f8fafc', border: '#cbd5e1', col: '#0f2942' },
+        { label: 'إجمالي المدفوع', val: formatMoney(st.paid), bg: '#f0fdfa', border: '#5eead4', col: '#0d9488' },
+        { label: 'خصم التسوية', val: formatMoney(st.discount), bg: '#fef9e7', border: '#fde68a', col: '#9a7b16' },
+        { label: 'الرصيد المتبقي', val: formatMoney(st.remaining), bg: '#fef2f2', border: '#fca5a5', col: '#dc2626' }
+      ];
+      var bw = (W - 72 - 36) / 4;
+      for (var i = 0; i < 4; i++) {
+        var bx = W - 36 - bw - i * (bw + 12);
+        var by = 276;
+        ctx.fillStyle = boxes[i].bg;
+        ctx.strokeStyle = boxes[i].border;
+        ctx.fillRect(bx, by, bw, 96);
+        ctx.strokeRect(bx, by, bw, 96);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#64748b';
+        ctx.font = '700 17px Cairo, sans-serif';
+        ctx.fillText(boxes[i].label, bx + bw / 2, by + 34);
+        ctx.fillStyle = boxes[i].col;
+        ctx.font = '800 24px Cairo, sans-serif';
+        ctx.fillText(boxes[i].val, bx + bw / 2, by + 74);
+      }
+
+      // جدول أحدث الدفعات
+      var y = 412;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#0f2942';
+      ctx.font = '800 21px Cairo, sans-serif';
+      ctx.fillText('سجل الدفعات المسجلة:', W - 40, y);
+      y += 18;
+
+      if (!list.length) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 18px Cairo, sans-serif';
+        ctx.fillText('لا توجد دفعات مسجلة حتى تاريخه.', W - 40, y + 34);
+        y += 55;
+      } else {
+        ctx.fillStyle = '#0d9488';
+        ctx.fillRect(36, y, W - 72, 42);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 18px Cairo, sans-serif';
+        ctx.fillText('التاريخ', W - 56, y + 28);
+        ctx.fillText('المبلغ', W - 260, y + 28);
+        ctx.fillText('رقم السند', W - 460, y + 28);
+        ctx.fillText('ملاحظة', W - 640, y + 28);
+        y += 42;
+
+        list.forEach(function(p, idx) {
+          ctx.fillStyle = idx % 2 === 0 ? '#f8fafc' : '#ffffff';
+          ctx.fillRect(36, y, W - 72, 44);
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.strokeRect(36, y, W - 72, 44);
+
+          ctx.fillStyle = '#1e293b';
+          ctx.font = '700 17px Cairo, sans-serif';
+          ctx.fillText(p.date || '—', W - 56, y + 29);
+          ctx.fillStyle = '#0d9488';
+          ctx.fillText(formatMoney(p.amount), W - 260, y + 29);
+          ctx.fillStyle = '#475569';
+          ctx.fillText(p.receiptId || '—', W - 460, y + 29);
+          ctx.fillText((p.note || 'دفعة مالية').substring(0, 22), W - 640, y + 29);
+          y += 44;
+        });
+        y += 18;
+      }
+
+      // صندوق الدفع عبر شام كاش + الباركود
+      if (showSham) {
+        y += 12;
+        ctx.fillStyle = '#f0fdfa';
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 2.5;
+        ctx.fillRect(36, y, W - 72, 185);
+        ctx.strokeRect(36, y, W - 72, 185);
+
+        // شريط عنوان جانبي ذهبي
+        ctx.fillStyle = '#c5a028';
+        ctx.fillRect(W - 44, y, 8, 185);
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#0f2942';
+        ctx.font = '800 22px Cairo, sans-serif';
+        ctx.fillText('الدفع الإلكتروني عبر شام كاش (Sham Cash)', W - 64, y + 40);
+
+        ctx.fillStyle = '#0f766e';
+        ctx.font = '700 19px Cairo, sans-serif';
+        if (appSettings.shamCashName) {
+          ctx.fillText('اسم الحساب: ' + appSettings.shamCashName, W - 64, y + 80);
+        }
+        if (appSettings.shamCashCode) {
+          ctx.fillStyle = '#0f2942';
+          ctx.font = '800 20px monospace, Cairo, sans-serif';
+          ctx.fillText('رمز الحساب: ' + appSettings.shamCashCode, W - 64, y + 116);
+        }
+        ctx.fillStyle = '#475569';
+        ctx.font = '600 16px Cairo, sans-serif';
+        ctx.fillText('امسح الباركود أو حوّل للرمز ثم أرسل صورة الإشعار عبر واتساب.', W - 64, y + 156);
+
+        if (qrImg) {
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 2;
+          ctx.fillRect(54, y + 16, 152, 152);
+          ctx.strokeRect(54, y + 16, 152, 152);
+          ctx.drawImage(qrImg, 60, y + 22, 140, 140);
+        }
+      }
+
+      // التذييل
+      ctx.fillStyle = '#0f2942';
+      ctx.fillRect(0, H - 56, W, 56);
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.font = '700 17px Cairo, sans-serif';
+      ctx.fillText('يرجى مراجعة قسم المحاسبة للمطابقة أو التسوية — وشكراً لتعاونكم', W / 2, H - 22);
+
+      lastStatementDataUrl = canvas.toDataURL('image/png');
+      lastStatementFilename = 'كشف-حساب-' + st.name.replace(/\s+/g, '-') + '.png';
+      document.getElementById('statementPreviewWrap').innerHTML = '<img src="' + lastStatementDataUrl + '" alt="كشف الحساب">';
+    }
+
+    function downloadStatementPng() {
+      if (!lastStatementDataUrl) return;
+      var a = document.createElement('a');
+      a.href = lastStatementDataUrl;
+      a.download = lastStatementFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('تم حفظ صورة كشف الحساب على جهازك');
+    }
+
+    function shareStatementPng() {
+      if (!lastStatementDataUrl) return;
+      try {
+        fetch(lastStatementDataUrl)
+          .then(function(r) { return r.blob(); })
+          .then(function(blob) {
+            var file = new File([blob], lastStatementFilename, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              return navigator.share({ files: [file], title: 'كشف حساب مالي', text: 'كشف حساب مالي من أرشيف الذمم' });
+            } else {
+              downloadStatementPng();
+              showToast('تم حفظ الصورة؛ أرفقها مباشرة في محادثة واتساب');
+            }
+          })
+          .catch(function() { downloadStatementPng(); });
+      } catch (e) { downloadStatementPng(); }
+    }
+
+    /* ---- مولّد بطاقة المطالبة المصوّرة المختصرة (الخيار 4) ---- */
+    function openClaimCardModal(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st) return;
+      currentClaimStudent = st;
+      lastClaimDataUrl = '';
+      document.getElementById('claimCardPreviewWrap').innerHTML = 'جاري رسم بطاقة المطالبة...';
+      var hasShamCode = (appSettings.shamCashEnabled === 'true') && Boolean(String(appSettings.shamCashCode || '').trim());
+      document.getElementById('btnSendShamOnlyClaim').style.display = (hasShamCode && normalizePhone(st.phone)) ? 'block' : 'none';
+      openModal('claimCardModal');
+
+      var showSham = (appSettings.shamCashEnabled === 'true') &&
+        Boolean(appSettings.shamCashCode || appSettings.shamCashQrData || appSettings.shamCashPayUrl);
+
+      var runDraw = function(qrImg) {
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(function() { drawClaimCardCanvas(st, showSham, qrImg); });
+        } else {
+          drawClaimCardCanvas(st, showSham, qrImg);
+        }
+      };
+
+      if (showSham && appSettings.shamCashQrData) {
+        var img1 = new Image();
+        img1.onload = function() { runDraw(img1); };
+        img1.onerror = function() { runDraw(null); };
+        img1.src = appSettings.shamCashQrData;
+      } else if (showSham && appSettings.shamCashPayUrl) {
+        var qrFallback = appSettings.shamCashPayUrl.replace(/pay\.html.*$/i, 'shamcash-qr.png');
+        var img2 = new Image();
+        img2.crossOrigin = 'anonymous';
+        img2.onload = function() { runDraw(img2); };
+        img2.onerror = function() { runDraw(null); };
+        img2.src = qrFallback;
+      } else {
+        runDraw(null);
+      }
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawClaimCardCanvas(st, showSham, qrImg) {
+      var canvas = document.getElementById('claimCardCanvas');
+      var W = 800;
+      var H = showSham ? (qrImg ? 920 : 690) : 520;
+      canvas.width = W;
+      canvas.height = H;
+      var ctx = canvas.getContext('2d');
+      ctx.direction = 'rtl';
+
+      // خلفية نظيفة
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, W, H);
+
+      // الرأس الكحلي + الذهبي
+      ctx.fillStyle = '#0f2942';
+      ctx.fillRect(0, 0, W, 128);
+      ctx.fillStyle = '#c5a028';
+      ctx.fillRect(0, 128, W, 7);
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 32px Cairo, sans-serif';
+      ctx.fillText('أرشيف الذمم — تذكير بالرصيد المالي', W / 2, 62);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '600 18px Cairo, sans-serif';
+      ctx.fillText('تاريخ الإشعار: ' + todayStr, W / 2, 102);
+
+      // بطاقة اسم الطالب والصف
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      drawRoundRect(ctx, 36, 158, W - 72, 114, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '700 18px Cairo, sans-serif';
+      ctx.fillText('ولي أمر الطالب/ة', W / 2, 192);
+      ctx.fillStyle = '#0f2942';
+      ctx.font = '800 28px Cairo, sans-serif';
+      ctx.fillText(st.name + '  (' + st.grade + ')', W / 2, 240);
+
+      // صندوق المبلغ المتبقي البارز
+      ctx.fillStyle = st.remaining > 0 ? '#fef2f2' : '#f0fdf4';
+      ctx.strokeStyle = st.remaining > 0 ? '#fca5a5' : '#86efac';
+      ctx.lineWidth = 2.5;
+      drawRoundRect(ctx, 36, 292, W - 72, 134, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = st.remaining > 0 ? '#991b1b' : '#166534';
+      ctx.font = '700 20px Cairo, sans-serif';
+      ctx.fillText(st.remaining > 0 ? 'المبلغ المتبقي المطلوب تسديده' : 'حالة الرصيد المالي', W / 2, 330);
+
+      ctx.fillStyle = st.remaining > 0 ? '#dc2626' : '#15803d';
+      ctx.font = '800 44px Cairo, sans-serif';
+      ctx.fillText(st.remaining > 0 ? formatMoney(st.remaining) : 'مسدد بالكامل', W / 2, 386);
+
+      if (st.nextPromiseDate && st.remaining > 0) {
+        ctx.fillStyle = '#475569';
+        ctx.font = '700 16px Cairo, sans-serif';
+        ctx.fillText('موعد السداد المتفق عليه: ' + st.nextPromiseDate, W / 2, 415);
+      }
+
+      // صندوق الدفع عبر شام كاش مع باركود كبير وواضح جداً
+      if (showSham) {
+        var boxTop = 448;
+        var boxH = qrImg ? 404 : 176;
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 3;
+        drawRoundRect(ctx, 36, boxTop, W - 72, boxH, 18);
+        ctx.fill();
+        ctx.stroke();
+
+        // شريط علوي تركوازي للصندوق
+        ctx.fillStyle = '#0d9488';
+        drawRoundRect(ctx, 36, boxTop, W - 72, 50, 14);
+        ctx.fill();
+        ctx.fillRect(36, boxTop + 34, W - 72, 16);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 21px Cairo, sans-serif';
+        ctx.fillText('الدفع الإلكتروني عبر شام كاش (Sham Cash)', W / 2, boxTop + 33);
+
+        var curY = boxTop + 76;
+        if (qrImg) {
+          var qrSize = 224;
+          var qx = (W - qrSize) / 2;
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 2;
+          drawRoundRect(ctx, qx - 10, curY - 10, qrSize + 20, qrSize + 20, 12);
+          ctx.fill();
+          ctx.stroke();
+          ctx.drawImage(qrImg, qx, curY, qrSize, qrSize);
+          curY += qrSize + 36;
+        }
+
+        if (appSettings.shamCashName) {
+          ctx.fillStyle = '#0f766e';
+          ctx.font = '700 20px Cairo, sans-serif';
+          ctx.fillText('اسم الحساب: ' + appSettings.shamCashName, W / 2, curY);
+          curY += 34;
+        }
+        if (appSettings.shamCashCode) {
+          ctx.fillStyle = '#0f2942';
+          ctx.font = '800 24px monospace, Cairo, sans-serif';
+          ctx.fillText(appSettings.shamCashCode, W / 2, curY + 4);
+        }
+      }
+
+      // تذييل البطاقة
+      ctx.fillStyle = '#0f2942';
+      ctx.fillRect(0, H - 54, W, 54);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 16px Cairo, sans-serif';
+      ctx.fillText('يرجى إرسال صورة إشعار التحويل عبر واتساب لتثبيت الدفعة فوراً', W / 2, H - 20);
+
+      lastClaimDataUrl = canvas.toDataURL('image/png');
+      lastClaimFilename = 'مطالبة-' + st.name.replace(/\s+/g, '-') + '.png';
+      document.getElementById('claimCardPreviewWrap').innerHTML = '<img src="' + lastClaimDataUrl + '" alt="بطاقة مطالبة">';
+    }
+
+    function downloadClaimCardPng() {
+      if (!lastClaimDataUrl) return;
+      var a = document.createElement('a');
+      a.href = lastClaimDataUrl;
+      a.download = lastClaimFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('تم حفظ بطاقة المطالبة على جهازك');
+    }
+
+    function shareClaimCardPng() {
+      if (!lastClaimDataUrl || !currentClaimStudent) return;
+      var st = currentClaimStudent;
+      var code = String(appSettings.shamCashCode || '').trim();
+      var captionText = code
+        ? ('السلام عليكم ولي أمر الطالب/ة ' + st.name + '، الرصيد المتبقي: ' + formatMoney(st.remaining) + '.\nرمز حساب شام كاش:\n`' + code + '`')
+        : ('السلام عليكم ولي أمر الطالب/ة ' + st.name + '، الرصيد المتبقي: ' + formatMoney(st.remaining));
+
+      // توثيق المحاولة في الخلفية
+      st.lastContactDate = todayStr;
+      st.contactCount = (st.contactCount || 0) + 1;
+      applyFilters();
+      google.script.run.logContactAttempts([st.id], getActor());
+
+      try {
+        fetch(lastClaimDataUrl)
+          .then(function(r) { return r.blob(); })
+          .then(function(blob) {
+            var file = new File([blob], lastClaimFilename, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              return navigator.share({ files: [file], title: 'تذكير بالرصيد المالي', text: captionText });
+            } else {
+              downloadClaimCardPng();
+              showToast('تم حفظ البطاقة؛ أرفقها مباشرة في محادثة واتساب');
+            }
+          })
+          .catch(function() { downloadClaimCardPng(); });
+      } catch (e) { downloadClaimCardPng(); }
+    }
+
+    function sendShamCodeOnlyWa() {
+      if (!currentClaimStudent) return;
+      var cleanPhone = normalizePhone(currentClaimStudent.phone);
+      var code = String(appSettings.shamCashCode || '').trim();
+      if (!cleanPhone) return alert('لا يوجد رقم هاتف مسجل لهذا الطالب.');
+      if (!code) return alert('يرجى إدخال رمز حساب شام كاش في الإعدادات أولاً.');
+      window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(code), '_blank');
+    }
+
+    function switchWaToClaimCard() {
+      if (!currentWaStudent) return;
+      var sid = currentWaStudent.id;
+      closeModal('waModal');
+      openClaimCardModal(sid);
+    }
+
+    function sendShamCodeOnlyFromWaModal() {
+      if (!currentWaStudent) return;
+      var cleanPhone = normalizePhone(currentWaStudent.phone);
+      var code = String(appSettings.shamCashCode || '').trim();
+      if (!cleanPhone) return alert('لا يوجد رقم هاتف مسجل لهذا الطالب.');
+      if (!code) return alert('يرجى إدخال رمز حساب شام كاش في الإعدادات أولاً.');
+      window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(code), '_blank');
+    }
+
+    /* ---- إضافة / تعديل طالب ---- */
+    function openStudentModal(studentId) {
+      var isEdit = Boolean(studentId);
+      document.getElementById('studentModalTitle').textContent = isEdit ? 'تعديل بيانات الذمة' : 'إضافة ذمة طالب';
+      if (isEdit) {
+        var st = allStudents.find(function(s) { return s.id === studentId; });
+        if (!st) return;
+        document.getElementById('fId').value = st.id;
+        document.getElementById('fName').value = st.name;
+        document.getElementById('fGrade').value = st.grade;
+        document.getElementById('fPhone').value = st.phone;
+        document.getElementById('fAddress').value = st.address;
+        document.getElementById('fTotal').value = st.total;
+        document.getElementById('fPaid').value = st.paid;
+        document.getElementById('fDiscount').value = st.discount;
+        document.getElementById('fVerify').value = st.verificationStatus || 'مؤكد';
+        document.getElementById('fPromiseDate').value = st.nextPromiseDate || '';
+        document.getElementById('fMonthly').value = st.monthlyInstallment || 0;
+        document.getElementById('fLastDate').value = st.lastPaymentDate || '';
+        document.getElementById('fFrozen').checked = Boolean(st.isFrozen);
+        document.getElementById('fNotes').value = st.notes || '';
+      } else {
+        document.getElementById('fId').value = '';
+        document.getElementById('fName').value = '';
+        document.getElementById('fGrade').value = 'الأول';
+        document.getElementById('fPhone').value = '';
+        document.getElementById('fAddress').value = '';
+        document.getElementById('fTotal').value = '';
+        document.getElementById('fPaid').value = '0';
+        document.getElementById('fDiscount').value = '0';
+        document.getElementById('fVerify').value = 'مؤكد';
+        document.getElementById('fPromiseDate').value = '';
+        document.getElementById('fMonthly').value = '0';
+        document.getElementById('fLastDate').value = '';
+        document.getElementById('fFrozen').checked = false;
+        document.getElementById('fNotes').value = '';
+      }
+      previewRemaining();
+      openModal('studentModal');
+    }
+
+    function previewRemaining() {
+      var t = parseNum(document.getElementById('fTotal').value);
+      var p = parseNum(document.getElementById('fPaid').value);
+      var d = currentUserRole === 'admin' ? parseNum(document.getElementById('fDiscount').value) : 0;
+      document.getElementById('fRemainingPreview').value = formatMoney(Math.max(0, t - p - d));
+    }
+
+    function saveStudent() {
+      var name = document.getElementById('fName').value.trim();
+      if (!name) return alert('يرجى إدخال اسم الطالب.');
+      var payload = {
+        id: document.getElementById('fId').value,
+        name: name, grade: document.getElementById('fGrade').value,
+        phone: toEnNum(document.getElementById('fPhone').value).trim(),
+        address: document.getElementById('fAddress').value.trim(),
+        total: parseNum(document.getElementById('fTotal').value),
+        paid: parseNum(document.getElementById('fPaid').value),
+        discount: parseNum(document.getElementById('fDiscount').value),
+        verificationStatus: document.getElementById('fVerify').value,
+        nextPromiseDate: document.getElementById('fPromiseDate').value,
+        monthlyInstallment: parseNum(document.getElementById('fMonthly').value),
+        lastPaymentDate: document.getElementById('fLastDate').value,
+        isFrozen: document.getElementById('fFrozen').checked,
+        notes: document.getElementById('fNotes').value.trim()
+      };
+      showLoader(true);
+      var runner = google.script.run
+        .withSuccessHandler(function(res) {
+          hydrateData(res.data); closeModal('studentModal'); showLoader(false);
+          showToast(payload.id ? 'تم تحديث البيانات' : 'تمت إضافة الطالب بنجاح');
+        })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); });
+      if (payload.id) runner.updateStudent(payload, getActor());
+      else runner.addStudent(payload, getActor());
+    }
+
+    /* ---- تسجيل دفعة + سند قبض ---- */
+    function openPaymentModal(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st) return;
+      currentPayStudent = st; lastReceiptData = null;
+      document.getElementById('paymentModalTitle').textContent = 'تسجيل دفعة جديدة';
+      document.getElementById('paymentFormSection').style.display = 'block';
+      document.getElementById('paymentFooter').style.display = 'flex';
+      document.getElementById('receiptSuccessSection').style.display = 'none';
+      document.getElementById('receiptFooter').style.display = 'none';
+
+      document.getElementById('pStudentId').value = st.id;
+      document.getElementById('pStudentName').textContent = st.name + ' — ' + st.grade;
+      document.getElementById('pCurrentRemaining').textContent = formatMoney(st.remaining);
+      document.getElementById('pAmount').value = '';
+      document.getElementById('pDiscount').value = '0';
+      document.getElementById('pDate').value = todayStr;
+      document.getElementById('pNote').value = '';
+
+      var mBtn = document.getElementById('btnFillMonthly');
+      if (st.monthlyInstallment > 0) {
+        mBtn.style.display = 'inline-block';
+        mBtn.textContent = 'القسط (' + formatMoney(st.monthlyInstallment) + ')';
+        document.getElementById('pAutoRollover').checked = true;
+      } else {
+        mBtn.style.display = 'none';
+        document.getElementById('pAutoRollover').checked = false;
+      }
+      openModal('paymentModal');
+    }
+    function fillFullRemaining() { if (currentPayStudent) document.getElementById('pAmount').value = currentPayStudent.remaining; }
+    function fillMonthlyInstallment() { if (currentPayStudent) document.getElementById('pAmount').value = Math.min(currentPayStudent.remaining, currentPayStudent.monthlyInstallment); }
+
+    function submitPayment() {
+      var amount = parseNum(document.getElementById('pAmount').value);
+      var extraDiscount = currentUserRole === 'admin' ? parseNum(document.getElementById('pDiscount').value) : 0;
+      if (amount <= 0 && extraDiscount <= 0) return alert('أدخل قيمة الدفعة.');
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hydrateData(res.data); lastReceiptData = res.receipt; showLoader(false);
+          document.getElementById('paymentModalTitle').textContent = 'سند قبض مالي';
+          document.getElementById('paymentFormSection').style.display = 'none';
+          document.getElementById('paymentFooter').style.display = 'none';
+          document.getElementById('receiptSuccessSection').style.display = 'block';
+          document.getElementById('receiptFooter').style.display = 'flex';
+          var r = res.receipt;
+          document.getElementById('receiptSummaryText').innerHTML =
+            'السند: <strong>' + escapeHtml(r.receiptId) + '</strong> (بواسطة: ' + escapeHtml(r.staffName) + ')<br>' +
+            'الطالب: <strong>' + escapeHtml(r.studentName) + '</strong><br>' +
+            'دفعة اليوم: <strong style="color:var(--teal);">' + formatMoney(r.amount) + '</strong><br>' +
+            'المتبقي الجديد: <strong style="color:var(--danger);">' + formatMoney(r.newRemaining) + '</strong>';
+        })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .recordPayment({
+          studentId: document.getElementById('pStudentId').value,
+          amount: amount, extraDiscount: extraDiscount,
+          date: document.getElementById('pDate').value || todayStr,
+          note: document.getElementById('pNote').value.trim(),
+          autoRollover: document.getElementById('pAutoRollover').checked
+        }, getActor());
+    }
+
+    function sendWhatsAppReceipt() {
+      if (!lastReceiptData) return;
+      var r = lastReceiptData;
+      var cleanPhone = normalizePhone(r.phone);
+      if (!cleanPhone) return alert('لا يوجد رقم هاتف مسجل.');
+      var msg = (appSettings.tplReceipt || '')
+        .replace(/\{الاسم\}/g, r.studentName).replace(/\{الصف\}/g, r.grade)
+        .replace(/\{التاريخ\}/g, r.date).replace(/\{رقم_السند\}/g, r.receiptId)
+        .replace(/\{دفعة_اليوم\}/g, formatMoney(r.amount)).replace(/\{المدفوع\}/g, formatMoney(r.newPaid))
+        .replace(/\{المتبقي\}/g, formatMoney(r.newRemaining));
+      window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    /* ---- موعد السداد + واتساب + العائلة + الجلسة ---- */
+    function openPromiseModal(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st) return;
+      document.getElementById('prStudentId').value = st.id;
+      document.getElementById('prStudentName').textContent = st.name + ' (' + formatMoney(st.remaining) + ')';
+      document.getElementById('prCurrentInfo').textContent = (st.nextPromiseDate ? ('الحالي: ' + st.nextPromiseDate) : 'بلا موعد') + ' | تأجيل ×' + st.postponeCount;
+      document.getElementById('prDate').value = st.nextPromiseDate || todayStr;
+      document.getElementById('prMonthly').value = st.monthlyInstallment || 0;
+      document.getElementById('prNote').value = '';
+      document.getElementById('prPostponeWrap').style.display = st.nextPromiseDate ? 'block' : 'none';
+      document.getElementById('prCountPostpone').checked = Boolean(st.nextPromiseDate);
+      openModal('promiseModal');
+    }
+
+    function submitPromise() {
+      var newDate = document.getElementById('prDate').value;
+      if (!newDate) return alert('اختر تاريخ الموعد.');
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hydrateData(res.data); closeModal('promiseModal'); showLoader(false);
+          showToast('تم حفظ الموعد وتحديث التقويم');
+          if (document.getElementById('quickSessionModal').classList.contains('show')) renderQuickSessionCard();
+        })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .updatePromiseDate({
+          studentId: document.getElementById('prStudentId').value, newDate: newDate,
+          monthlyInstallment: parseNum(document.getElementById('prMonthly').value),
+          noteAppend: document.getElementById('prNote').value.trim(),
+          countAsPostpone: document.getElementById('prCountPostpone').checked
+        }, getActor());
+    }
+
+    function openWaModal(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st) return;
+      if (!normalizePhone(st.phone)) return alert('لا يوجد رقم هاتف مسجل لهذا الطالب.');
+      currentWaStudent = st;
+      document.getElementById('waModalTitle').textContent = 'واتساب: ' + st.name;
+      var hasSham = (appSettings.shamCashEnabled === 'true') && Boolean(String(appSettings.shamCashCode || '').trim());
+      document.getElementById('btnWaSendCodeOnly').style.display = hasSham ? 'inline-flex' : 'none';
+      if (st.verificationStatus !== 'مؤكد') selectWaTemplate('friendly');
+      else if (st.nextPromiseDate) selectWaTemplate('reminder');
+      else selectWaTemplate('final');
+      openModal('waModal');
+    }
+
+    function selectWaTemplate(type) {
+      ['tabFriendly', 'tabReminder', 'tabFinal'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
+      var tpl = '';
+      if (type === 'friendly') { document.getElementById('tabFriendly').classList.add('active'); tpl = appSettings.tplFriendly || ''; }
+      else if (type === 'reminder') { document.getElementById('tabReminder').classList.add('active'); tpl = appSettings.tplReminder || ''; }
+      else { document.getElementById('tabFinal').classList.add('active'); tpl = appSettings.tplFinal || ''; }
+
+      var st = currentWaStudent;
+      var remStr = formatMoney(st.remaining);
+      var msg = tpl
+        .replace(/\{الاسم\}/g, st.name).replace(/\{الصف\}/g, st.grade)
+        .replace(/\{الأساسي\}/g, formatMoney(st.total)).replace(/\{المدفوع\}/g, formatMoney(st.paid))
+        .replace(/\{المتبقي\}/g, remStr).replace(/\{الموعد\}/g, st.nextPromiseDate || 'الأيام القادمة');
+
+      if (st.remaining > 0) {
+        msg += buildShamCashFooter(st.name, remStr);
+      }
+      document.getElementById('waPreviewText').value = msg;
+    }
+
+    function confirmSendWhatsApp() {
+      if (!currentWaStudent) return;
+      window.open('https://wa.me/' + normalizePhone(currentWaStudent.phone) + '?text=' + encodeURIComponent(document.getElementById('waPreviewText').value.trim()), '_blank');
+      var sid = currentWaStudent.id;
+      currentWaStudent.lastContactDate = todayStr;
+      currentWaStudent.contactCount = (currentWaStudent.contactCount || 0) + 1;
+      applyFilters(); closeModal('waModal');
+      showToast('تم فتح واتساب وتوثيق المطالبة');
+      google.script.run.logContactAttempts([sid], getActor());
+    }
+
+    function openFamilyModal(cleanPhone) {
+      var map = getFamilyMap();
+      currentFamilyList = map[cleanPhone] || [];
+      if (!currentFamilyList.length) return;
+      var totalRem = 0;
+      var items = currentFamilyList.map(function(st) {
+        totalRem += st.remaining;
+        return '<div class="history-item"><div><strong>' + escapeHtml(st.name) + '</strong><div class="student-sub">' + escapeHtml(st.grade) + '</div></div><div class="money-rem">' + formatMoney(st.remaining) + '</div></div>';
+      }).join('');
+      document.getElementById('familyModalBody').innerHTML = '<div class="info-box">إجمالي ذمة العائلة: <strong>' + formatMoney(totalRem) + '</strong> (' + currentFamilyList.length + ' طلاب)</div>' + items;
+      openModal('familyModal');
+    }
+
+    function sendFamilyWhatsApp() {
+      if (!currentFamilyList.length) return;
+      var totalRem = 0;
+      var namesArr = [];
+      var lines = currentFamilyList.map(function(st) {
+        totalRem += st.remaining;
+        namesArr.push(st.name);
+        return '- ' + st.name + ' (' + st.grade + '): متبقي ' + formatMoney(st.remaining);
+      });
+      var remStr = formatMoney(totalRem);
+      var msg = 'السلام عليكم ولي الأمر الكريم.\nملخص الذمم المالية المتبقية لأبنائكم:\n' + lines.join('\n') +
+        '\n\nالإجمالي المتبقي: ' + remStr + '\nيرجى مراجعة قسم المحاسبة للمطابقة أو التسوية.';
+      msg += buildShamCashFooter('عائلة: ' + namesArr.join(' و '), remStr);
+
+      window.open('https://wa.me/' + normalizePhone(currentFamilyList[0].phone) + '?text=' + encodeURIComponent(msg), '_blank');
+      var ids = currentFamilyList.map(function(st) { st.lastContactDate = todayStr; st.contactCount = (st.contactCount || 0) + 1; return st.id; });
+      applyFilters(); closeModal('familyModal');
+      google.script.run.logContactAttempts(ids, getActor());
+    }
+
+    function openQuickSession(dueOnly) {
+      sessionList = allStudents.filter(function(st) {
+        if (st.isFrozen || st.remaining <= 0) return false;
+        if (dueOnly) return Boolean(st.nextPromiseDate && st.nextPromiseDate <= todayStr);
+        return true;
+      });
+      sessionList.sort(function(a, b) {
+        var aDue = (a.nextPromiseDate && a.nextPromiseDate <= todayStr) ? 0 : 1;
+        var bDue = (b.nextPromiseDate && b.nextPromiseDate <= todayStr) ? 0 : 1;
+        if (aDue !== bDue) return aDue - bDue;
+        return b.remaining - a.remaining;
+      });
+      if (!sessionList.length) { syncBottomNavState(); return alert('لا توجد ذمم نشطة للمطالبة حالياً.'); }
+      sessionIndex = 0;
+      renderQuickSessionCard();
+      openModal('quickSessionModal');
+    }
+
+    function renderQuickSessionCard() {
+      var currentId = sessionList[sessionIndex].id;
+      var st = allStudents.find(function(x) { return x.id === currentId; }) || sessionList[sessionIndex];
+      var safeId = escapeHtml(st.id).replace(/'/g, "\\'");
+      var cleanPhone = normalizePhone(st.phone);
+      document.getElementById('quickSessionBody').innerHTML =
+        '<div class="session-counter">الطالب ' + (sessionIndex + 1) + ' من ' + sessionList.length + '</div>' +
+        '<div class="session-card">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+            '<div class="student-name" style="font-size:16px;">' + escapeHtml(st.name) + '</div>' +
+            '<div class="money-rem" style="font-size:17px;">' + formatMoney(st.remaining) + '</div>' +
+          '</div>' +
+          '<div class="badges-row" style="margin:6px 0 8px;"><span class="badge badge-grade">' + escapeHtml(st.grade) + '</span>' + getVerifyBadge(st.verificationStatus) + '</div>' +
+          '<div style="font-size:12px; line-height:1.7; margin-bottom:10px;">' +
+            '<strong>الهاتف:</strong> <span dir="ltr">' + escapeHtml(st.phone || '—') + '</span> | <strong>الموعد:</strong> ' + escapeHtml(st.nextPromiseDate || '—') + '<br>' +
+            '<strong>آخر مطالبة:</strong> ' + (st.lastContactDate || 'لم يُطالب بعد') +
+          '</div>' +
+          '<div class="quick-outcome-grid" style="margin-bottom:10px;">' +
+            '<button type="button" class="outcome-btn" onclick="submitQuickOutcome(\'' + safeId + '\', \'لم يرد على الاتصال\')">📵 لم يرد</button>' +
+            '<button type="button" class="outcome-btn" onclick="submitQuickOutcome(\'' + safeId + '\', \'الهاتف مغلق\')">📴 الهاتف مغلق</button>' +
+          '</div>' +
+          '<div class="session-actions">' +
+            '<button type="button" class="btn btn-wa" onclick="openWaModal(\'' + safeId + '\')">💬 واتساب</button>' +
+            '<button type="button" class="btn btn-gold" onclick="openClaimCardModal(\'' + safeId + '\')">🖼 بطاقة بالباركود</button>' +
+            (cleanPhone ? '<a class="btn btn-call" href="tel:+' + cleanPhone + '" target="_top">📞 اتصال</a>' : '<button type="button" class="btn btn-secondary" disabled>بلا رقم</button>') +
+            '<button type="button" class="btn btn-primary" onclick="openPaymentModal(\'' + safeId + '\')">💵 دفعة</button>' +
+            '<button type="button" class="btn btn-navy" style="grid-column:1/-1;" onclick="openPromiseModal(\'' + safeId + '\')">📅 تحديد / تأجيل موعد</button>' +
+          '</div>' +
+        '</div>';
+    }
+    function nextSessionItem() { if (sessionIndex < sessionList.length - 1) { sessionIndex++; renderQuickSessionCard(); } else showToast('آخر طالب في الجلسة'); }
+    function prevSessionItem() { if (sessionIndex > 0) { sessionIndex--; renderQuickSessionCard(); } }
+
+    function openTodayBoxModal() {
+      var body = document.getElementById('todayBoxBody');
+      if (!todayPayments.length) {
+        body.innerHTML = '<div class="empty-state">لا توجد مقبوضات مسجلة اليوم (' + todayStr + ').</div>';
+      } else {
+        body.innerHTML = '<div class="info-box">إجمالي اليوم: <strong>' + formatMoney(todayTotal) + '</strong> | إجمالي الشهر: <strong>' + formatMoney(monthTotal) + '</strong></div>' +
+          todayPayments.map(function(item) {
+            return '<div class="history-item"><div><strong>' + escapeHtml(item.studentName) + '</strong><div class="student-sub">بواسطة: ' + escapeHtml(item.staffName) + ' | ' + escapeHtml(item.note || 'دفعة نقدية') + '</div></div><div style="text-align:left;"><strong style="color:var(--teal);">+ ' + formatMoney(item.amount) + '</strong><div class="student-sub">' + escapeHtml(item.receiptId) + '</div></div></div>';
+          }).join('');
+      }
+      openModal('todayBoxModal');
+    }
+
+    function openHistoryModal(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st) return;
+      document.getElementById('historyTitle').textContent = 'سجل دفعات: ' + st.name;
+      document.getElementById('historyBody').innerHTML = '<div class="empty-state">جاري الجلب...</div>';
+      openModal('historyModal');
+      google.script.run.withSuccessHandler(function(list) {
+        if (!list || !list.length) { document.getElementById('historyBody').innerHTML = '<div class="empty-state">لا توجد دفعات مسجلة.</div>'; return; }
+        document.getElementById('historyBody').innerHTML = list.map(function(item) {
+          return '<div class="history-item"><div><strong style="color:var(--teal);">+ ' + formatMoney(item.amount) + '</strong><div class="student-sub">بواسطة: ' + escapeHtml(item.staffName) + ' | ' + escapeHtml(item.note || 'دفعة') + '</div></div><div style="text-align:left;"><strong>' + escapeHtml(item.date) + '</strong><div class="student-sub">' + escapeHtml(item.receiptId) + '</div></div></div>';
+        }).join('');
+      }).getStudentPayments(studentId);
+    }
+
+    function toggleFreeze(studentId, freezeBool) {
+      if (!confirm(freezeBool ? 'نقل هذه الذمة إلى الديون المجمّدة؟' : 'إعادة تنشيط هذه الذمة؟')) return;
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) { hydrateData(res.data); showLoader(false); showToast(freezeBool ? 'تم التجميد' : 'تمت إعادة التنشيط'); })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .toggleFreezeStudent(studentId, freezeBool, getActor());
+    }
+
+    function confirmDelete(studentId) {
+      var st = allStudents.find(function(s) { return s.id === studentId; });
+      if (!st || !confirm('حذف "' + st.name + '" نهائياً؟')) return;
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) { hydrateData(res.data); showLoader(false); showToast('تم الحذف'); })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .deleteStudent(studentId, getActor());
+    }
+
+    function openBulkModal() { document.getElementById('bulkText').value = ''; openModal('bulkModal'); }
+    function submitBulkImport() {
+      var raw = document.getElementById('bulkText').value.trim();
+      if (!raw) return alert('ألصق البيانات أولاً.');
+      var parsed = [];
+      raw.split(/\r?\n/).forEach(function(line) {
+        if (!line.trim()) return;
+        var cols = line.indexOf('\t') !== -1 ? line.split('\t') : line.split(/[,،;]/);
+        var name = (cols[0] || '').trim();
+        if (!name || name === 'اسم الطالب') return;
+        parsed.push({
+          name: name, grade: (cols[1] || 'غير محدد').trim(), phone: toEnNum(cols[2] || '').trim(),
+          total: parseNum(cols[3] || 0), paid: parseNum(cols[4] || 0),
+          address: (cols[5] || '').trim(), notes: (cols[6] || '').trim()
+        });
+      });
+      if (!parsed.length) return alert('لم يتم التعرف على صفوف صالحة.');
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) { hydrateData(res.data); closeModal('bulkModal'); showLoader(false); showToast('تم استيراد ' + res.addedCount + ' طالب'); })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .importStudentsBulk(parsed, getActor());
+    }
+
+    /* ---- الإعدادات ورفع صورة باركود شام كاش ---- */
+    function openSettingsModal() {
+      if (currentUserRole !== 'admin') return alert('الإعدادات مخصصة للإدارة فقط.');
+      document.getElementById('setShamEnabled').checked = (appSettings.shamCashEnabled === 'true');
+      document.getElementById('setShamName').value = appSettings.shamCashName || '';
+      document.getElementById('setShamCode').value = appSettings.shamCashCode || '';
+      document.getElementById('setShamPayUrl').value = appSettings.shamCashPayUrl || '';
+      document.getElementById('setShamQrFile').value = '';
+
+      pendingQrData = appSettings.shamCashQrData || '';
+      pendingQrChanged = false;
+      updateQrPreviewUI();
+
+      document.getElementById('setPinEnabled').checked = (appSettings.pinEnabled === 'true');
+      document.getElementById('setAdminPin').value = appSettings.adminPin || '1234';
+      document.getElementById('setStaffPin').value = appSettings.staffPin || '5678';
+      document.getElementById('setCurrency').value = appSettings.currency || '$';
+      document.getElementById('setCountryCode').value = appSettings.countryCode || '963';
+      document.getElementById('setCalEnabled').checked = (appSettings.calendarEnabled === 'true');
+      document.getElementById('setCalHour').value = appSettings.calendarHour || '9';
+      document.getElementById('setEmailRecipients').value = appSettings.emailRecipients || '';
+      document.getElementById('setTplFriendly').value = appSettings.tplFriendly || '';
+      document.getElementById('setTplReminder').value = appSettings.tplReminder || '';
+      document.getElementById('setTplFinal').value = appSettings.tplFinal || '';
+      document.getElementById('setTplReceipt').value = appSettings.tplReceipt || '';
+      openModal('settingsModal');
+    }
+
+    function updateQrPreviewUI() {
+      var box = document.getElementById('qrPreviewContainer');
+      if (pendingQrData) {
+        document.getElementById('qrPreviewImg').src = pendingQrData;
+        box.style.display = 'flex';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+
+    function handleQrUpload(e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+          var maxDim = 260;
+          var w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          var c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          var ctx = c.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          pendingQrData = c.toDataURL('image/jpeg', 0.85);
+          pendingQrChanged = true;
+          updateQrPreviewUI();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearShamQr() {
+      pendingQrData = '';
+      pendingQrChanged = true;
+      document.getElementById('setShamQrFile').value = '';
+      updateQrPreviewUI();
+    }
+
+    function saveSettings() {
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.settings) appSettings = res.settings;
+          closeModal('settingsModal'); applyFilters(); showLoader(false);
+          showToast('تم حفظ الإعدادات بنجاح');
+        })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .saveAppSettings({
+          shamCashEnabled: document.getElementById('setShamEnabled').checked,
+          shamCashName: document.getElementById('setShamName').value.trim(),
+          shamCashCode: document.getElementById('setShamCode').value.trim(),
+          shamCashPayUrl: document.getElementById('setShamPayUrl').value.trim(),
+          shamCashQrChanged: pendingQrChanged,
+          shamCashQrData: pendingQrData,
+          pinEnabled: document.getElementById('setPinEnabled').checked,
+          adminPin: document.getElementById('setAdminPin').value.trim(),
+          staffPin: document.getElementById('setStaffPin').value.trim(),
+          currency: document.getElementById('setCurrency').value.trim() || '$',
+          countryCode: document.getElementById('setCountryCode').value.trim() || '963',
+          calendarEnabled: document.getElementById('setCalEnabled').checked,
+          calendarHour: document.getElementById('setCalHour').value || '9',
+          emailRecipients: document.getElementById('setEmailRecipients').value.trim(),
+          tplFriendly: document.getElementById('setTplFriendly').value.trim(),
+          tplReminder: document.getElementById('setTplReminder').value.trim(),
+          tplFinal: document.getElementById('setTplFinal').value.trim(),
+          tplReceipt: document.getElementById('setTplReceipt').value.trim()
+        }, currentUserRole);
+    }
+
+    function testEmailReport() {
+      showLoader(true);
+      google.script.run
+        .withSuccessHandler(function(msg) { showLoader(false); alert(msg); })
+        .withFailureHandler(function(err) { showLoader(false); alert(err.message); })
+        .sendTestReminderEmail();
+    }
   </script>
 </body>
 </html>
