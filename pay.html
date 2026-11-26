@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f2942">
+  <meta property="og:title" content="الدفع الإلكتروني عبر شام كاش — أرشيف الذمم">
+  <meta property="og:description" content="امسح باركود شام كاش أو انسخ رمز الحساب بضغطة واحدة لتسديد الرصيد المالي.">
+  <meta property="og:image" content="shamcash-qr.png">
+  <title>الدفع عبر شام كاش — أرشيف الذمم</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0f2942;
+      --navy-light: #1a3b5c;
+      --teal: #0d9488;
+      --teal-hover: #0f766e;
+      --gold: #c5a028;
+      --bg: #f1f5f9;
+      --border: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background: var(--bg); color: #1e293b;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .card {
+      width: 100%; max-width: 440px; background: #fff; border-radius: 18px;
+      overflow: hidden; box-shadow: 0 14px 36px rgba(15, 41, 66, 0.14);
+      border: 1px solid var(--border);
+    }
+    .header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      color: #fff; padding: 20px 18px; text-align: center;
+      border-bottom: 4px solid var(--gold);
+    }
+    .header img {
+      width: 58px; height: 58px; border-radius: 14px;
+      border: 2px solid var(--gold); margin-bottom: 8px;
+    }
+    .header h1 { font-size: 18px; font-weight: 800; }
+    .header p { font-size: 12px; color: #cbd5e1; margin-top: 3px; }
+    .body { padding: 18px; }
+
+    .student-box {
+      display: none; background: #fef2f2; border: 1px solid #fecaca;
+      border-right: 4px solid #dc2626; border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 14px;
+    }
+    .student-box.show { display: block; }
+    .st-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .st-name { font-size: 14px; font-weight: 800; color: var(--navy); }
+    .st-amount { font-size: 18px; font-weight: 800; color: #dc2626; }
+
+    .qr-wrap {
+      background: #f8fafc; border: 2px dashed var(--teal); border-radius: 14px;
+      padding: 16px; text-align: center; margin-bottom: 14px;
+    }
+    .qr-wrap img {
+      width: 230px; max-width: 100%; height: auto; border-radius: 10px;
+      background: #fff; padding: 8px; border: 1px solid var(--border);
+    }
+    .qr-fallback {
+      display: none; font-size: 12px; color: var(--muted); padding: 16px 8px; line-height: 1.7;
+    }
+
+    .code-box {
+      background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 14px; text-align: center;
+    }
+    .acct-name { font-size: 13px; font-weight: 700; color: #115e59; margin-bottom: 4px; }
+    .acct-code {
+      font-size: 18px; font-weight: 800; color: var(--navy);
+      letter-spacing: 0.5px; word-break: break-all; direction: ltr;
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
+      padding: 8px 10px; margin: 6px 0 10px;
+    }
+
+    .btn-copy {
+      width: 100%; border: none; border-radius: 10px; padding: 12px;
+      background: var(--teal); color: #fff; font-size: 14px; font-weight: 800;
+      cursor: pointer; transition: 0.18s;
+    }
+    .btn-copy:hover { background: var(--teal-hover); }
+    .btn-copy.copied { background: #15803d; }
+
+    .btn-secondary {
+      width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px;
+      background: #f8fafc; color: var(--navy); font-size: 13px; font-weight: 700;
+      cursor: pointer; margin-top: 8px; display: block; text-decoration: none; text-align: center;
+    }
+
+    .note {
+      margin-top: 14px; font-size: 12px; color: var(--muted); text-align: center;
+      line-height: 1.7; background: #f8fafc; padding: 10px 12px; border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <img src="icon.png" alt="أرشيف الذمم" onerror="this.style.display='none'">
+      <h1>الدفع الإلكتروني عبر شام كاش</h1>
+      <p>امسح الباركود أو انسخ رمز الحساب للتحويل المباشر</p>
+    </div>
+
+    <div class="body">
+      <div class="student-box" id="studentBox">
+        <div class="st-row">
+          <div>
+            <div style="font-size:11px; color:#64748b;">حساب الطالب/ة:</div>
+            <div class="st-name" id="lblStudentName"></div>
+          </div>
+          <div style="text-align:left;">
+            <div style="font-size:11px; color:#64748b;">المبلغ المطلوب:</div>
+            <div class="st-amount" id="lblAmount"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qr-wrap">
+        <img id="qrImg" src="shamcash-qr.png" alt="باركود شام كاش"
+             onerror="this.style.display='none'; document.getElementById('qrFallback').style.display='block';">
+        <div id="qrFallback" class="qr-fallback">
+          يمكنك استخدام <strong>رمز الحساب</strong> أدناه للتحويل المباشر عبر تطبيق شام كاش.
+        </div>
+        <div style="font-size:11px; color:#64748b; margin-top:6px;">
+          في حال كنت تفتح الصفحة من نفس الجوال، اضغط على زر «نسخ رمز الحساب» أدناه.
+        </div>
+      </div>
+
+      <div class="code-box" id="codeBox">
+        <div class="acct-name" id="lblAccountName"></div>
+        <div class="acct-code" id="lblAccountCode">—</div>
+        <button type="button" class="btn-copy" id="btnCopyCode" onclick="copyCode()">📋 نسخ رمز حساب شام كاش</button>
+        <a id="btnDownloadQr" href="shamcash-qr.png" download="shamcash-qr.png" class="btn-secondary">⬇ حفظ صورة الباركود في الاستوديو</a>
+      </div>
+
+      <div class="note">
+        بعد إتمام التحويل عبر تطبيق <strong>شام كاش</strong>، يرجى إرسال صورة إشعار التحويل عبر <strong>واتساب</strong> لتثبيت الدفعة في رصيد الطالب فوراً.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // قيم افتراضية احتياطية في حال فُتحت الصفحة مباشرة بدون رابط مخصّص:
+    var DEFAULT_ACCOUNT_NAME = "";
+    var DEFAULT_ACCOUNT_CODE = "";
+
+    var params = new URLSearchParams(window.location.search);
+    var studentName = params.get("n") || "";
+    var amount = params.get("a") || "";
+    var code = params.get("c") || DEFAULT_ACCOUNT_CODE;
+    var acctName = params.get("an") || DEFAULT_ACCOUNT_NAME;
+
+    if (studentName || amount) {
+      document.getElementById("studentBox").classList.add("show");
+      document.getElementById("lblStudentName").textContent = studentName || "—";
+      document.getElementById("lblAmount").textContent = amount || "—";
+    }
+
+    if (acctName) {
+      document.getElementById("lblAccountName").textContent = "اسم الحساب: " + acctName;
+    }
+
+    if (code) {
+      document.getElementById("lblAccountCode").textContent = code;
+    } else {
+      document.getElementById("lblAccountCode").style.display = "none";
+      document.getElementById("btnCopyCode").style.display = "none";
+    }
+
+    function copyCode() {
+      if (!code) return;
+      var btn = document.getElementById("btnCopyCode");
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(markCopied).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      function fallbackCopy() {
+        var ta = document.createElement("textarea");
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        markCopied();
+      }
+      function markCopied() {
+        btn.textContent = "✓ تم نسخ رمز الحساب بنجاح";
+        btn.classList.add("copied");
+        setTimeout(function() {
+          btn.textContent = "📋 نسخ رمز حساب شام كاش";
+          btn.classList.remove("copied");
+        }, 2500);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "أرشيف الذمم",
+  "short_name": "أرشيف الذمم",
+  "description": "نظام ترتيب الديون والمطالبة الفورية",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f2942",
+  "theme_color": "#0f2942",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

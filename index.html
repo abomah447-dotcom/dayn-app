@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f2942">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="أرشيف الذمم">
+  <title>أرشيف الذمم</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #0f2942; font-family: Tahoma, Arial, sans-serif;
+    }
+    #splash {
+      position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10;
+      background: linear-gradient(160deg, #0f2942 0%, #1a3b5c 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #fff; gap: 14px; transition: opacity 0.35s ease; text-align: center; padding: 20px;
+    }
+    #splash.hide { opacity: 0; pointer-events: none; }
+    #splash img {
+      width: 112px; height: 112px; border-radius: 24px;
+      border: 2px solid #c5a028; box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    }
+    .loader-bar {
+      width: 140px; height: 4px; background: rgba(255,255,255,0.18);
+      border-radius: 4px; overflow: hidden;
+    }
+    .loader-bar::after {
+      content: ''; display: block; width: 45%; height: 100%;
+      background: #0d9488; border-radius: 4px;
+      animation: move 1.1s infinite ease-in-out;
+    }
+    @keyframes move {
+      0% { transform: translateX(120%); }
+      100% { transform: translateX(-220%); }
+    }
+    #setupNote {
+      display: none; max-width: 360px; background: rgba(255,255,255,0.1);
+      border: 1px solid #c5a028; border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.7;
+    }
+    iframe {
+      width: 100%; height: 100vh; height: 100dvh; border: none; display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <img src="icon.png" alt="أرشيف الذمم">
+    <h2 style="font-size:20px; font-weight:700;">أرشيف الذمم</h2>
+    <div class="loader-bar" id="loaderBar"></div>
+    <div id="setupNote">
+      تنبيه التفعيل: يرجى فتح ملف <strong>index.html</strong> واستبدال عبارة <code>ضع_رابط_تطبيق_Apps_Script_هنا</code> برابط Web App الخاص بك المنتهي بـ <code>/exec</code>.
+    </div>
+  </div>
+
+  <iframe id="appFrame" allow="clipboard-write; web-share"></iframe>
+
+  <script>
+    // ضع رابط تطبيق الويب (Web App URL) المنسوخ من Google Apps Script هنا:
+    var APPS_SCRIPT_URL = "ضع_رابط_تطبيق_Apps_Script_هنا";
+
+    (function() {
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf("http") !== 0) {
+        document.getElementById("loaderBar").style.display = "none";
+        document.getElementById("setupNote").style.display = "block";
+        return;
+      }
+      var frame = document.getElementById("appFrame");
+      frame.onload = function() {
+        document.getElementById("splash").classList.add("hide");
+      };
+      frame.src = APPS_SCRIPT_URL;
+      setTimeout(function() {
+        document.getElementById("splash").classList.add("hide");
+      }, 6000);
+    })();
+  </script>
+</body>
+</html>
